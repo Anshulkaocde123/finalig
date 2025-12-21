@@ -1,0 +1,76 @@
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import AdminLayout from './components/AdminLayout';
+import Departments from './pages/admin/Departments';
+import ScheduleMatch from './pages/admin/ScheduleMatch';
+import LiveConsole from './pages/admin/LiveConsole';
+import AwardPoints from './pages/admin/AwardPoints';
+import LeaderboardManagement from './pages/admin/LeaderboardManagement';
+import SeasonManagement from './pages/admin/SeasonManagement';
+import ScoringPresets from './pages/admin/ScoringPresets';
+import StudentCouncilManagement from './pages/admin/StudentCouncilManagement';
+import AboutManagement from './pages/admin/AboutManagement';
+import Login from './pages/auth/Login';
+import ProtectedRoute from './components/ProtectedRoute';
+import Home from './pages/public/Home';
+import Leaderboard from './pages/public/Leaderboard';
+import MatchDetail from './pages/public/MatchDetail';
+import About from './pages/public/About';
+import StudentCouncil from './pages/public/StudentCouncil';
+import { Toaster } from 'react-hot-toast';
+import './App.css';
+
+import Dashboard from './pages/admin/Dashboard';
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check localStorage or system preference
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) return JSON.parse(saved);
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  return (
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Home isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+        <Route path="/leaderboard" element={<Leaderboard isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+        <Route path="/match/:id" element={<MatchDetail isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+        <Route path="/about" element={<About isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+        <Route path="/student-council" element={<StudentCouncil isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected Admin Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/admin" element={<AdminLayout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />}>
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="departments" element={<Departments />} />
+            <Route path="schedule" element={<ScheduleMatch />} />
+            <Route path="live" element={<LiveConsole />} />
+            <Route path="points" element={<AwardPoints />} />
+            <Route path="leaderboard" element={<LeaderboardManagement />} />
+            <Route path="seasons" element={<SeasonManagement />} />
+            <Route path="scoring-presets" element={<ScoringPresets />} />
+            <Route path="student-council" element={<StudentCouncilManagement />} />
+            <Route path="about" element={<AboutManagement />} />
+            <Route path="*" element={<div className="text-gray-500 p-4">Page not found</div>} />
+          </Route>
+        </Route>
+      </Routes>
+      <Toaster position="top-right" />
+    </Router>
+  );
+}
+
+export default App;
