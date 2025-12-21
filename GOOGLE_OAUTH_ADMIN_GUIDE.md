@@ -133,15 +133,25 @@ npm run dev
 
 ## 🔑 Getting Your Actual Google Credentials
 
-### Example Credentials (For Testing - Replace These):
+### Your Google Client ID (Already Have):
 ```
-Google Client ID:     123456789-abcdefghijklmnop.apps.googleusercontent.com
-Google Client Secret: GOCSPX-aBcDeFgHiJkLmNoPqRsT
+Google Client ID: 311672185118-fnu83et05guc71ffdf39r4meknj3lolj.apps.googleusercontent.com
 ```
 
+**Still Need**:
+- Google Client Secret (from Google Cloud Console)
+
 **Real credentials have this format**:
-- **Client ID**: Starts with numbers, ends with `.apps.googleusercontent.com`
-- **Client Secret**: Starts with `GOCSPX-` followed by random characters
+- **Client ID**: Starts with numbers, ends with `.apps.googleusercontent.com` ✅ (You have this)
+- **Client Secret**: Starts with `GOCSPX-` followed by random characters (STILL NEEDED)
+
+### To Get Your Client Secret:
+1. Go to https://console.cloud.google.com/
+2. Find your project or create new one: "VNIT IG App"
+3. Go to **Credentials**
+4. Find your OAuth 2.0 Client ID entry
+5. Click on it to see the **Client Secret**
+6. Copy both Client ID and Secret
 
 ---
 
