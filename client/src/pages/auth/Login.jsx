@@ -71,7 +71,7 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+            const res = await axios.post('/api/auth/login', formData);
 
             if (res.data.token) {
                 localStorage.setItem('adminToken', res.data.token);
@@ -102,7 +102,7 @@ const Login = () => {
             const googleData = JSON.parse(jsonPayload);
 
             // Send to backend
-            const res = await axios.post('http://localhost:5000/api/auth/register-oauth', {
+            const res = await axios.post('/api/auth/register-oauth', {
                 googleId: googleData.sub,
                 email: googleData.email,
                 name: googleData.name,
