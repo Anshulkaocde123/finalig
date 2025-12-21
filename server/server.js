@@ -71,14 +71,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 if (process.env.NODE_ENV === 'production') {
     const clientBuildPath = path.join(__dirname, '../client/dist');
     app.use(express.static(clientBuildPath));
-    
-    // Fallback to index.html for client-side routing
-    // Use a regex to match any path — compatible with path-to-regexp
-    app.get(/.*/, (req, res) => {
-        if (!req.path.startsWith('/api')) {
-            res.sendFile(path.join(clientBuildPath, 'index.html'));
-        }
-    });
 }
 
 // Logging middleware (development only)
@@ -156,6 +148,14 @@ app.use((err, req, res, next) => {
         stack: process.env.NODE_ENV === 'production' ? null : err.stack
     });
 });
+
+// React fallback - AFTER all API routes
+if (process.env.NODE_ENV === 'production') {
+    const clientBuildPath = path.join(__dirname, '../client/dist');
+    app.get(/^\/(?!api\/).*$/, (req, res) => {
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
+}
 
 // Port configuration
 const PORT = process.env.PORT || 5000;
