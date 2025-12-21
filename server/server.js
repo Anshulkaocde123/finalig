@@ -142,10 +142,11 @@ app.use((err, req, res, next) => {
 
 // Port configuration
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Start server (use 'server' not 'app' for Socket.io)
-const serverInstance = server.listen(PORT, () => {
-    console.log(`🚀 Server listening on port ${PORT}`);
+const serverInstance = server.listen(PORT, HOST, () => {
+    console.log(`🚀 Server listening on ${HOST}:${PORT}`);
     console.log(`🔌 Socket.io ready for connections`);
 });
 
