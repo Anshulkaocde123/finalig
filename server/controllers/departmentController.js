@@ -8,7 +8,7 @@ const getDepartments = async (req, res) => {
         console.log('📍 getDepartments: Starting request');
         const startTime = Date.now();
         
-        const departments = await Department.find().sort({ name: 1 }).maxTimeMS(10000);
+        const departments = await Department.find().sort({ name: 1 }).lean();
         
         const elapsed = Date.now() - startTime;
         console.log(`✅ getDepartments: Found ${departments.length} departments in ${elapsed}ms`);

@@ -70,7 +70,7 @@ const getStandings = async (req, res) => {
                     history: 1
                 }
             }
-        ]).maxTimeMS(10000);
+        ], { maxTimeMS: 10000 });
 
         const elapsed = Date.now() - startTime;
         console.log(`✅ getStandings: Fetched standings in ${elapsed}ms`);

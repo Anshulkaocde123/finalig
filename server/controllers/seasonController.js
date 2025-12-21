@@ -49,7 +49,7 @@ const getSeasons = async (req, res) => {
             query.isActive = true;
         }
 
-        const seasons = await Season.find(query).sort({ createdAt: -1 }).maxTimeMS(10000);
+        const seasons = await Season.find(query).sort({ createdAt: -1 }).lean();
 
         const elapsed = Date.now() - startTime;
         console.log(`✅ getSeasons: Fetched ${seasons.length} seasons in ${elapsed}ms`);
