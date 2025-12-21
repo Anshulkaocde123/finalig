@@ -65,7 +65,7 @@ const Departments = () => {
     const getLogoUrl = (logoPath) => {
         if (!logoPath) return null;
         if (logoPath.startsWith('http')) return logoPath;
-        return `http://localhost:5000${logoPath}`;
+        return logoPath;
     };
 
     return (

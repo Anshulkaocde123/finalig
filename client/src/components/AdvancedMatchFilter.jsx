@@ -27,7 +27,7 @@ const AdvancedMatchFilter = ({ onFilter }) => {
 
     const fetchSeasons = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/seasons');
+            const res = await fetch('/api/seasons');
             const data = await res.json();
             setSeasons(data.data || []);
         } catch (error) {
@@ -37,7 +37,7 @@ const AdvancedMatchFilter = ({ onFilter }) => {
 
     const fetchDepartments = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/departments');
+            const res = await fetch('/api/departments');
             const data = await res.json();
             setDepartments(data.data || []);
         } catch (error) {
