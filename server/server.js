@@ -150,12 +150,18 @@ app.use((err, req, res, next) => {
 // React fallback for client-side routing - AFTER all API routes
 if (process.env.NODE_ENV === 'production') {
     const clientBuildPath = path.join(__dirname, '../client/dist');
-    app.get('/*', (req, res) => {
+    // Use app.use() for fallback catch-all (Express 5 compatible)
+    app.use((req, res, next) => {
         // Don't interfere with API routes
         if (req.path.startsWith('/api')) {
             return res.status(404).json({ error: 'API route not found' });
         }
-        res.sendFile(path.join(clientBuildPath, 'index.html'));
+        res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+            if (err) {
+                console.error('Error sending file:', err.message);
+                res.status(500).json({ error: 'Failed to load page' });
+            }
+        });
     });
 }
 
