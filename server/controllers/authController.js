@@ -2,27 +2,61 @@ const Admin = require('../models/Admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// @desc    Auth admin with username/password
+// @desc    Auth admin with username/password or student ID
 // @route   POST /api/auth/login
 // @access  Public
 const login = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, studentId } = req.body;
 
-        const admin = await Admin.findOne({ username });
+        // Support both username and studentId login
+        const loginId = studentId || username;
+        
+        const admin = await Admin.findOne({ 
+            $or: [
+                { username: loginId },
+                { studentId: loginId },
+                { email: loginId }
+            ]
+        }).select('+password');
 
-        if (admin && (await bcrypt.compare(password, admin.password))) {
-            res.json({
-                _id: admin._id,
-                username: admin.username,
-                email: admin.email,
-                name: admin.name,
-                token: generateToken(admin._id),
-                provider: 'local'
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid credentials' });
+        if (!admin) {
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
+
+        // Check if account is active
+        if (!admin.isActive) {
+            return res.status(403).json({ 
+                message: 'Account suspended',
+                reason: admin.suspensionReason 
+            });
+        }
+
+        // Verify password
+        const isMatch = await admin.comparePassword(password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Update login stats
+        admin.lastLogin = new Date();
+        admin.loginCount = (admin.loginCount || 0) + 1;
+        await admin.save();
+
+        res.json({
+            _id: admin._id,
+            studentId: admin.studentId,
+            username: admin.username,
+            email: admin.email,
+            name: admin.name,
+            role: admin.role,
+            isTrusted: admin.isTrusted,
+            permissions: admin.permissions,
+            department: admin.department,
+            profilePicture: admin.profilePicture,
+            token: generateToken(admin._id),
+            provider: 'local'
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -30,7 +64,7 @@ const login = async (req, res) => {
 };
 
 // @desc    Google OAuth callback
-// @route   GET /api/auth/google/callback
+// @route   POST /api/auth/google/callback
 // @access  Public
 const googleCallback = async (req, res) => {
     try {
@@ -39,6 +73,9 @@ const googleCallback = async (req, res) => {
         let admin = await Admin.findOne({ googleId });
 
         if (!admin) {
+            // Check if email is a VNIT student email
+            const isVNITEmail = email?.match(/^[a-z]{2}\d{2}[a-z]{3}\d{3}@students\.vnit\.ac\.in$/);
+            
             // Create new admin from Google profile
             admin = await Admin.create({
                 googleId,
@@ -46,20 +83,45 @@ const googleCallback = async (req, res) => {
                 name,
                 profilePicture: picture,
                 provider: 'google',
-                verified: true
+                verified: true,
+                role: 'viewer', // New OAuth users start as viewers
+                isTrusted: false // Must be verified by super_admin
             });
+            
+            // Extract student ID from VNIT email if applicable
+            if (isVNITEmail) {
+                const match = email.match(/\d{2}[a-z]{3}(\d{3})/);
+                if (match) {
+                    admin.studentId = match[1].padStart(5, '0');
+                    await admin.save();
+                }
+            }
         } else {
             // Update profile info
             admin.name = name || admin.name;
             admin.profilePicture = picture || admin.profilePicture;
             admin.email = email || admin.email;
+            admin.lastLogin = new Date();
+            admin.loginCount = (admin.loginCount || 0) + 1;
             await admin.save();
+        }
+
+        // Check if account is active
+        if (!admin.isActive) {
+            return res.status(403).json({ 
+                message: 'Account suspended',
+                reason: admin.suspensionReason 
+            });
         }
 
         res.json({
             _id: admin._id,
+            studentId: admin.studentId,
             email: admin.email,
             name: admin.name,
+            role: admin.role,
+            isTrusted: admin.isTrusted,
+            permissions: admin.permissions,
             profilePicture: admin.profilePicture,
             token: generateToken(admin._id),
             provider: 'google'
@@ -70,27 +132,33 @@ const googleCallback = async (req, res) => {
     }
 };
 
-// @desc    Seed initial admin
+// @desc    Seed initial super admin
 // @route   POST /api/auth/seed
 // @access  Public (Should be protected or removed in prod)
 const seedAdmin = async (req, res) => {
     try {
-        const exists = await Admin.findOne({ $or: [{ username: 'admin' }, { email: 'admin@vnit.ac.in' }] });
+        const exists = await Admin.findOne({ 
+            $or: [
+                { username: 'admin' }, 
+                { email: 'admin@vnit.ac.in' },
+                { role: 'super_admin' }
+            ] 
+        });
+        
         if (exists) {
             return res.status(400).json({ message: 'Admin already exists' });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('admin123', salt);
-
         const admin = await Admin.create({
             username: 'admin',
+            studentId: '00000',
             email: 'admin@vnit.ac.in',
-            password: hashedPassword,
-            name: 'VNIT Admin',
+            password: 'admin123',
+            name: 'VNIT Super Admin',
             provider: 'local',
             verified: true,
-            role: 'admin'
+            role: 'super_admin',
+            isTrusted: true
         });
 
         res.status(201).json({
@@ -98,6 +166,7 @@ const seedAdmin = async (req, res) => {
             username: admin.username,
             email: admin.email,
             name: admin.name,
+            role: admin.role,
             token: generateToken(admin._id),
             provider: 'local'
         });
@@ -130,6 +199,8 @@ const registerOAuth = async (req, res) => {
                 _id: admin._id,
                 email: admin.email,
                 name: admin.name,
+                role: admin.role,
+                isTrusted: admin.isTrusted,
                 profilePicture: admin.profilePicture,
                 token: generateToken(admin._id),
                 provider: 'google',
@@ -145,21 +216,99 @@ const registerOAuth = async (req, res) => {
             profilePicture: picture,
             provider: 'google',
             verified: true,
-            role: 'admin'
+            role: 'viewer', // Start as viewer
+            isTrusted: false
         });
 
         res.status(201).json({
             _id: admin._id,
             email: admin.email,
             name: admin.name,
+            role: admin.role,
+            isTrusted: admin.isTrusted,
             profilePicture: admin.profilePicture,
             token: generateToken(admin._id),
             provider: 'google',
-            message: 'Account created successfully'
+            message: 'Account created successfully. Contact admin to get trusted status.'
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error during registration' });
+    }
+};
+
+// @desc    Get current user profile
+// @route   GET /api/auth/me
+// @access  Private
+const getMe = async (req, res) => {
+    try {
+        const admin = await Admin.findById(req.admin._id)
+            .populate('department', 'name shortCode logo')
+            .populate('lockedMatches.match', 'sport teamA teamB status')
+            .select('-password');
+        
+        res.json({
+            success: true,
+            data: admin
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Update current user profile
+// @route   PUT /api/auth/me
+// @access  Private
+const updateMe = async (req, res) => {
+    try {
+        const { name, phone, profilePicture } = req.body;
+        
+        const admin = await Admin.findById(req.admin._id);
+        
+        if (name) admin.name = name;
+        if (phone !== undefined) admin.phone = phone;
+        if (profilePicture) admin.profilePicture = profilePicture;
+        
+        await admin.save();
+        
+        res.json({
+            success: true,
+            data: admin.getPublicProfile()
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Change password
+// @route   PUT /api/auth/change-password
+// @access  Private
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        const admin = await Admin.findById(req.admin._id).select('+password');
+        
+        if (!admin.password) {
+            return res.status(400).json({ 
+                message: 'Cannot change password for OAuth accounts' 
+            });
+        }
+        
+        const isMatch = await admin.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+        
+        admin.password = newPassword;
+        await admin.save();
+        
+        res.json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -173,5 +322,8 @@ module.exports = {
     login,
     googleCallback,
     registerOAuth,
-    seedAdmin
+    seedAdmin,
+    getMe,
+    updateMe,
+    changePassword
 };

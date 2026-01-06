@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Lazy load 3D background for performance
+const ThreeBackground = React.lazy(() => import('../../components/ThreeBackground'));
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -9,6 +13,7 @@ const Login = () => {
         password: ''
     });
     const [loading, setLoading] = useState(false);
+    const [focusedField, setFocusedField] = useState(null);
     const navigate = useNavigate();
 
     // Initialize Google Sign-In
@@ -31,10 +36,11 @@ const Login = () => {
                     const buttonElement = document.getElementById('google-signin-button');
                     if (buttonElement) {
                         window.google.accounts.id.renderButton(buttonElement, {
-                            theme: 'outline',
+                            theme: 'filled_black',
                             size: 'large',
                             width: '100%',
-                            text: 'signin_with'
+                            text: 'signin_with',
+                            shape: 'pill'
                         });
                     }
                 } catch (error) {
@@ -123,96 +129,245 @@ const Login = () => {
         }
     };
 
+    // Floating particles for non-3D fallback
+    const FloatingParticles = () => (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(20)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                    initial={{
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        scale: Math.random() * 0.5 + 0.5,
+                        opacity: Math.random() * 0.5 + 0.3
+                    }}
+                    animate={{
+                        y: [null, Math.random() * -200 - 100],
+                        x: [null, (Math.random() - 0.5) * 100],
+                        opacity: [null, 0]
+                    }}
+                    transition={{
+                        duration: Math.random() * 10 + 10,
+                        repeat: Infinity,
+                        ease: "linear"
+                    }}
+                />
+            ))}
+        </div>
+    );
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 p-4">
-            <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-extrabold text-indigo-900">Admin Login</h1>
-                    <p className="text-gray-500 mt-2">Secure access for VNIT Sports officials</p>
+        <div className="min-h-screen relative overflow-hidden bg-[#0a0a0f]">
+            {/* 3D Background */}
+            <Suspense fallback={
+                <div className="fixed inset-0 bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f]">
+                    <FloatingParticles />
                 </div>
+            }>
+                <ThreeBackground variant="login" />
+            </Suspense>
 
-                {/* Google Sign-In Button */}
-                {import.meta.env.VITE_GOOGLE_CLIENT_ID && 
-                 import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE' ? (
-                    <>
-                        <div className="mb-6 flex justify-center">
-                            <div id="google-signin-button" className="w-full"></div>
+            {/* Gradient overlays */}
+            <div className="fixed inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
+            
+            {/* Main content */}
+            <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    className="w-full max-w-md"
+                >
+                    {/* Glassmorphism Card */}
+                    <div className="relative">
+                        {/* Glow effect behind card */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-30 animate-pulse" />
+                        
+                        <div className="relative backdrop-blur-xl bg-white/10 p-8 md:p-10 rounded-3xl border border-white/20 shadow-2xl">
+                            {/* Logo/Header */}
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="text-center mb-8"
+                            >
+                                <motion.div
+                                    whileHover={{ scale: 1.05, rotate: 3 }}
+                                    className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30"
+                                >
+                                    <span className="text-3xl">🏆</span>
+                                </motion.div>
+                                <h1 className="text-3xl font-black text-white tracking-tight">
+                                    Admin <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Portal</span>
+                                </h1>
+                                <p className="text-gray-400 mt-2 text-sm">VNIT Inter-Department Games</p>
+                            </motion.div>
+
+                            {/* Google Sign-In Button */}
+                            {import.meta.env.VITE_GOOGLE_CLIENT_ID && 
+                             import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE' ? (
+                                <>
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="mb-6"
+                                    >
+                                        <div id="google-signin-button" className="w-full flex justify-center"></div>
+                                    </motion.div>
+
+                                    {/* Divider */}
+                                    <div className="relative mb-6">
+                                        <div className="absolute inset-0 flex items-center">
+                                            <div className="w-full border-t border-white/10"></div>
+                                        </div>
+                                        <div className="relative flex justify-center text-sm">
+                                            <span className="px-4 bg-transparent text-gray-500 text-xs uppercase tracking-wider">or continue with</span>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : null}
+
+                            {/* Login Form */}
+                            <motion.form 
+                                onSubmit={handleSubmit} 
+                                className="space-y-5"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.4 }}
+                            >
+                                {/* Username Field */}
+                                <div className="relative">
+                                    <motion.label 
+                                        animate={{ 
+                                            color: focusedField === 'username' ? '#818cf8' : '#9ca3af',
+                                            y: focusedField === 'username' ? -2 : 0
+                                        }}
+                                        className="block text-xs font-semibold uppercase tracking-wider mb-2 transition-colors"
+                                    >
+                                        Username
+                                    </motion.label>
+                                    <div className="relative group">
+                                        <input
+                                            type="text"
+                                            name="username"
+                                            value={formData.username}
+                                            onChange={handleChange}
+                                            onFocus={() => setFocusedField('username')}
+                                            onBlur={() => setFocusedField(null)}
+                                            className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition-all duration-300"
+                                            placeholder="Enter your username"
+                                            required
+                                        />
+                                        <motion.div 
+                                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity -z-10 blur-xl"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Password Field */}
+                                <div className="relative">
+                                    <motion.label 
+                                        animate={{ 
+                                            color: focusedField === 'password' ? '#818cf8' : '#9ca3af',
+                                            y: focusedField === 'password' ? -2 : 0
+                                        }}
+                                        className="block text-xs font-semibold uppercase tracking-wider mb-2 transition-colors"
+                                    >
+                                        Password
+                                    </motion.label>
+                                    <div className="relative group">
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            onFocus={() => setFocusedField('password')}
+                                            onBlur={() => setFocusedField(null)}
+                                            className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition-all duration-300"
+                                            placeholder="Enter your password"
+                                            required
+                                        />
+                                        <motion.div 
+                                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity -z-10 blur-xl"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Submit Button */}
+                                <motion.button
+                                    type="submit"
+                                    disabled={loading}
+                                    whileHover={{ scale: loading ? 1 : 1.02 }}
+                                    whileTap={{ scale: loading ? 1 : 0.98 }}
+                                    className={`relative w-full py-4 rounded-xl text-white font-bold text-lg overflow-hidden group transition-all duration-300 ${
+                                        loading
+                                            ? 'bg-gray-600 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/30'
+                                    }`}
+                                >
+                                    {/* Button shine effect */}
+                                    {!loading && (
+                                        <motion.div 
+                                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"
+                                        />
+                                    )}
+                                    <span className="relative flex items-center justify-center gap-2">
+                                        {loading ? (
+                                            <>
+                                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                </svg>
+                                                Signing In...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Sign In
+                                                <motion.span
+                                                    initial={{ x: 0 }}
+                                                    whileHover={{ x: 5 }}
+                                                >
+                                                    →
+                                                </motion.span>
+                                            </>
+                                        )}
+                                    </span>
+                                </motion.button>
+                            </motion.form>
+
+                            {/* Security Badge */}
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.6 }}
+                                className="mt-8 flex items-center justify-center gap-2 text-gray-500 text-xs"
+                            >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                                <span>Secured with JWT Authentication</span>
+                            </motion.div>
                         </div>
-
-                        {/* Divider */}
-                        <div className="relative mb-6">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-300"></div>
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-white text-gray-500">Or continue with username</span>
-                            </div>
-                        </div>
-                    </>
-                ) : (
-                    <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-xs text-yellow-700">
-                            ⚠️ <strong>Google OAuth not configured yet.</strong><br />
-                            Set your Google Client ID in <code className="bg-yellow-100 px-2 py-1 rounded">.env.local</code> to enable Google Sign-In.
-                        </p>
-                    </div>
-                )}
-
-                {/* Traditional Login Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-                        <input
-                            type="text"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
-                            placeholder="Enter username"
-                            required
-                        />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
-                            placeholder="Enter password"
-                            required
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className={`w-full py-3 rounded-lg text-white font-bold text-lg transition-all ${
-                            loading
-                                ? 'bg-indigo-400 cursor-not-allowed'
-                                : 'bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl'
-                        }`}
+                    {/* Back to Home Link */}
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7 }}
+                        className="mt-6 text-center"
                     >
-                        {loading ? 'Verifying...' : 'Sign In'}
-                    </button>
-                </form>
-
-                <div className="mt-6 text-center text-xs text-gray-400">
-                    <p>🔒 Protected System • Authorized Personnel Only</p>
-                </div>
-
-                {/* Security Features */}
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg text-xs text-blue-700">
-                    <p className="font-semibold mb-2">Security Features:</p>
-                    <ul className="space-y-1">
-                        <li>✓ End-to-end encryption</li>
-                        <li>✓ JWT token-based sessions</li>
-                        <li>✓ Google OAuth 2.0</li>
-                        <li>✓ Secure password hashing</li>
-                    </ul>
-                </div>
+                        <a 
+                            href="/" 
+                            className="text-gray-400 hover:text-white text-sm transition-colors inline-flex items-center gap-2 group"
+                        >
+                            <motion.span whileHover={{ x: -3 }}>←</motion.span>
+                            Back to Home
+                        </a>
+                    </motion.div>
+                </motion.div>
             </div>
         </div>
     );

@@ -15,6 +15,7 @@ const AdminLayout = ({ isDarkMode, setIsDarkMode }) => {
         { name: '🏆 Leaderboard', path: '/admin/leaderboard' },
         { name: '🎯 Seasons', path: '/admin/seasons' },
         { name: '⚙️ Scoring Presets', path: '/admin/scoring-presets' },
+        { name: '👥 Admin Users', path: '/admin/users' },
         { name: '🎓 Student Council', path: '/admin/student-council' },
         { name: '📖 About VNIT IG', path: '/admin/about' }
     ];

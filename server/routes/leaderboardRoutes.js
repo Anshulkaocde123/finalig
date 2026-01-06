@@ -2,17 +2,28 @@ const express = require('express');
 const router = express.Router();
 const { 
     awardPoints, 
-    getStandings, 
+    getStandings,
+    getDetailedStandings,
+    awardPointsFromMatch,
     resetLeaderboard, 
     undoLastAward, 
-    clearDepartmentPoints 
+    clearDepartmentPoints,
+    getDepartmentHistory
 } = require('../controllers/leaderboardController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.post('/award', protect, awardPoints);
+// Public routes
 router.get('/', getStandings);
-router.post('/reset', protect, resetLeaderboard);
+router.get('/detailed', getDetailedStandings);
+router.get('/department/:deptId/history', getDepartmentHistory);
+
+// Protected routes
+router.post('/award', protect, awardPoints);
+router.post('/award-from-match', protect, awardPointsFromMatch);
 router.post('/undo-last', protect, undoLastAward);
-router.delete('/department/:deptId', protect, clearDepartmentPoints);
+router.delete('/department/:deptId', protect, authorize('super_admin', 'admin'), clearDepartmentPoints);
+
+// Super admin only
+router.post('/reset', protect, authorize('super_admin'), resetLeaderboard);
 
 module.exports = router;

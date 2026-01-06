@@ -2,7 +2,8 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 // Use relative URL for same-origin requests, supports both dev and production
-const API_URL = process.env.REACT_APP_API_URL || '/api';
+// In development, proxy handles /api -> localhost:5000/api
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
     baseURL: API_URL,

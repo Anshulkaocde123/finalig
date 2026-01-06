@@ -1,55 +1,35 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from '../../api/axios';
 import toast from 'react-hot-toast';
+import { Users, Plus, Edit, Trash2, X, Save, User } from 'lucide-react';
 
 const StudentCouncilManagement = () => {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({
-        name: '',
-        position: 'Member',
-        department: 'CSE',
-        photo: '',
-        pledge: '',
-        email: '',
-        phone: '',
-        order: 0
-    });
+    const [formData, setFormData] = useState({ name: '', position: 'Member', department: 'CSE', photo: '', pledge: '', email: '', phone: '', order: 0 });
 
-    useEffect(() => {
-        fetchMembers();
-    }, []);
+    const departments = ['CSE', 'CIVIL', 'CHEM', 'EEE', 'ECE', 'MECH', 'META', 'MINING'];
+    const positions = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Sports Head', 'Cultural Head', 'Academics Head', 'Member'];
+
+    useEffect(() => { fetchMembers(); }, []);
 
     const fetchMembers = async () => {
         try {
             setLoading(true);
             const response = await axios.get('/student-council');
-            setMembers(response.data.data);
-        } catch (error) {
-            toast.error('Failed to fetch members');
-        } finally {
-            setLoading(false);
-        }
+            setMembers(response.data.data || []);
+        } catch (error) { toast.error('Failed to fetch members'); }
+        finally { setLoading(false); }
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
+    const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        if (!formData.name || !formData.position || !formData.department) {
-            toast.error('Please fill in all required fields');
-            return;
-        }
-
+        if (!formData.name || !formData.position || !formData.department) { toast.error('Please fill in all required fields'); return; }
         try {
             setLoading(true);
             if (editingId) {
@@ -59,21 +39,13 @@ const StudentCouncilManagement = () => {
                 await axios.post('/student-council', formData);
                 toast.success('Member added successfully');
             }
-            
             resetForm();
             fetchMembers();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to save member');
-        } finally {
-            setLoading(false);
-        }
+        } catch (error) { toast.error(error.response?.data?.message || 'Failed to save member'); }
+        finally { setLoading(false); }
     };
 
-    const handleEdit = (member) => {
-        setFormData(member);
-        setEditingId(member._id);
-        setShowForm(true);
-    };
+    const handleEdit = (member) => { setFormData(member); setEditingId(member._id); setShowForm(true); };
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this member?')) {
@@ -82,247 +54,138 @@ const StudentCouncilManagement = () => {
                 await axios.delete(`/student-council/${id}`);
                 toast.success('Member deleted successfully');
                 fetchMembers();
-            } catch (error) {
-                toast.error('Failed to delete member');
-            } finally {
-                setLoading(false);
-            }
+            } catch (error) { toast.error('Failed to delete member'); }
+            finally { setLoading(false); }
         }
     };
 
-    const resetForm = () => {
-        setFormData({
-            name: '',
-            position: 'Member',
-            department: 'CSE',
-            photo: '',
-            pledge: '',
-            email: '',
-            phone: '',
-            order: 0
-        });
-        setEditingId(null);
-        setShowForm(false);
+    const resetForm = () => { setFormData({ name: '', position: 'Member', department: 'CSE', photo: '', pledge: '', email: '', phone: '', order: 0 }); setEditingId(null); setShowForm(false); };
+
+    const getPositionColor = (pos) => {
+        const colors = { 'President': 'from-yellow-500 to-amber-600', 'Vice President': 'from-blue-500 to-indigo-600', 'Secretary': 'from-purple-500 to-pink-600', 'Treasurer': 'from-green-500 to-emerald-600', 'Sports Head': 'from-red-500 to-orange-600', 'Cultural Head': 'from-pink-500 to-rose-600', 'Academics Head': 'from-cyan-500 to-teal-600' };
+        return colors[pos] || 'from-slate-500 to-slate-600';
     };
 
-    const departments = ['CSE', 'CIVIL', 'CHEM', 'EEE', 'ECE', 'MECH', 'META', 'MINING'];
-    const positions = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Sports Head', 'Cultural Head', 'Academics Head', 'Member'];
-
     return (
-        <div className="min-h-screen bg-light-bg dark:bg-dark-bg p-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 md:p-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-4xl font-black text-vnit-primary dark:text-vnit-accent">
-                        🎓 Student Council Management
-                    </h1>
-                    <button
-                        onClick={() => setShowForm(!showForm)}
-                        className="bg-gradient-to-r from-vnit-primary to-blue-700 hover:from-vnit-primary/90 hover:to-blue-700/90 text-white font-black py-3 px-6 rounded-lg border-2 border-vnit-accent transition"
-                    >
-                        {showForm ? '✕ Cancel' : '+ Add Member'}
-                    </button>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+                        <h1 className="text-3xl md:text-4xl font-black text-white flex items-center gap-3">
+                            <Users className="w-8 h-8 text-indigo-400" />
+                            Student Council
+                        </h1>
+                        <p className="text-gray-400 mt-1">Manage council members and positions</p>
+                    </motion.div>
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowForm(!showForm)}
+                        className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${showForm ? 'bg-red-600 hover:bg-red-700' : 'bg-gradient-to-r from-indigo-600 to-purple-600'} text-white shadow-lg`}>
+                        {showForm ? <><X className="w-5 h-5" /> Cancel</> : <><Plus className="w-5 h-5" /> Add Member</>}
+                    </motion.button>
                 </div>
 
                 {/* Form */}
-                {showForm && (
-                    <div className="bg-light-surface dark:bg-dark-surface rounded-2xl border-2 border-vnit-accent p-8 mb-8 shadow-lg">
-                        <h2 className="text-2xl font-black text-vnit-primary dark:text-vnit-accent mb-6">
-                            {editingId ? 'Edit Member' : 'Add New Member'}
-                        </h2>
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Full Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter name"
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                />
-                            </div>
+                <AnimatePresence>
+                    {showForm && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                            className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 mb-8 overflow-hidden">
+                            <h2 className="text-2xl font-bold text-white mb-6">{editingId ? 'Edit' : 'Add New'} Member</h2>
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Full Name *</label>
+                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Enter name"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Position *</label>
+                                    <select name="position" value={formData.position} onChange={handleInputChange}
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Department *</label>
+                                    <select name="department" value={formData.department} onChange={handleInputChange}
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Email</label>
+                                    <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="email@example.com"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Phone</label>
+                                    <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+91 XXXXXXXXXX"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Display Order</label>
+                                    <input type="number" name="order" value={formData.order} onChange={handleInputChange} placeholder="0"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Photo URL</label>
+                                    <input type="url" name="photo" value={formData.photo} onChange={handleInputChange} placeholder="https://example.com/photo.jpg"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Pledge / Motto</label>
+                                    <textarea name="pledge" value={formData.pledge} onChange={handleInputChange} placeholder="Enter your pledge or motto..." rows="2"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none resize-none" />
+                                </div>
+                                <div className="md:col-span-2 flex gap-4">
+                                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading}
+                                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg disabled:opacity-50">
+                                        {loading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-5 h-5" />}
+                                        {editingId ? 'Update' : 'Add'} Member
+                                    </motion.button>
+                                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="button" onClick={resetForm}
+                                        className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-bold">
+                                        Cancel
+                                    </motion.button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                            <div>
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Position *
-                                </label>
-                                <select
-                                    name="position"
-                                    value={formData.position}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                >
-                                    {positions.map(pos => (
-                                        <option key={pos} value={pos}>{pos}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Department *
-                                </label>
-                                <select
-                                    name="department"
-                                    value={formData.department}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                >
-                                    {departments.map(dept => (
-                                        <option key={dept} value={dept}>{dept}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Email
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    placeholder="email@example.com"
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Phone
-                                </label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    placeholder="+91 XXXXXXXXXX"
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Display Order
-                                </label>
-                                <input
-                                    type="number"
-                                    name="order"
-                                    value={formData.order}
-                                    onChange={handleInputChange}
-                                    placeholder="0"
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Photo URL
-                                </label>
-                                <input
-                                    type="url"
-                                    name="photo"
-                                    value={formData.photo}
-                                    onChange={handleInputChange}
-                                    placeholder="https://example.com/photo.jpg"
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-bold text-light-text dark:text-dark-text mb-2">
-                                    Pledge / Motto
-                                </label>
-                                <textarea
-                                    name="pledge"
-                                    value={formData.pledge}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter your pledge or motto..."
-                                    rows="3"
-                                    className="w-full px-4 py-2 border-2 border-vnit-accent rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-vnit-secondary"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2 flex gap-4">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="flex-1 bg-gradient-to-r from-vnit-primary to-blue-700 hover:from-vnit-primary/90 hover:to-blue-700/90 text-white font-black py-3 rounded-lg border-2 border-vnit-accent transition disabled:opacity-50"
-                                >
-                                    {loading ? 'Saving...' : editingId ? 'Update Member' : 'Add Member'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-black py-3 rounded-lg transition"
-                                >
-                                    Reset
-                                </button>
-                            </div>
-                        </form>
+                {/* Members Grid */}
+                {loading && members.length === 0 ? (
+                    <div className="text-center py-12"><div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
+                ) : members.length === 0 ? (
+                    <div className="text-center py-16 backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl">
+                        <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-400 text-lg">No council members yet</p>
+                        <p className="text-gray-500 text-sm mt-2">Add your first member to get started</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {members.map((member, idx) => (
+                            <motion.div key={member._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                                className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all group">
+                                <div className="flex items-start gap-4">
+                                    <div className={`w-14 h-14 rounded-full bg-gradient-to-r ${getPositionColor(member.position)} flex items-center justify-center text-white shadow-lg`}>
+                                        {member.photo ? <img src={member.photo} alt={member.name} className="w-full h-full rounded-full object-cover" /> : <User className="w-7 h-7" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-lg font-bold text-white truncate">{member.name}</h3>
+                                        <p className={`text-sm font-semibold bg-gradient-to-r ${getPositionColor(member.position)} bg-clip-text text-transparent`}>{member.position}</p>
+                                        <p className="text-xs text-gray-500 mt-1">{member.department}</p>
+                                    </div>
+                                </div>
+                                {member.pledge && <p className="text-sm text-gray-400 mt-3 italic">"{member.pledge}"</p>}
+                                <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleEdit(member)}
+                                        className="p-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-400 rounded-lg"><Edit className="w-4 h-4" /></motion.button>
+                                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(member._id)}
+                                        className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg"><Trash2 className="w-4 h-4" /></motion.button>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 )}
-
-                {/* Members List */}
-                <div className="bg-light-surface dark:bg-dark-surface rounded-2xl border-2 border-vnit-accent p-8 shadow-lg">
-                    <h2 className="text-2xl font-black text-vnit-primary dark:text-vnit-accent mb-6">
-                        👥 Council Members ({members.length})
-                    </h2>
-
-                    {loading && !showForm ? (
-                        <div className="text-center py-8">Loading members...</div>
-                    ) : members.length === 0 ? (
-                        <div className="text-center py-8 text-light-text-secondary dark:text-dark-text-secondary">
-                            No members yet. Add your first member!
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b-2 border-vnit-accent">
-                                        <th className="text-left py-3 px-4 font-black text-vnit-primary dark:text-vnit-accent">Name</th>
-                                        <th className="text-left py-3 px-4 font-black text-vnit-primary dark:text-vnit-accent">Position</th>
-                                        <th className="text-left py-3 px-4 font-black text-vnit-primary dark:text-vnit-accent">Department</th>
-                                        <th className="text-left py-3 px-4 font-black text-vnit-primary dark:text-vnit-accent">Email</th>
-                                        <th className="text-left py-3 px-4 font-black text-vnit-primary dark:text-vnit-accent">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {members.map(member => (
-                                        <tr key={member._id} className="border-b border-vnit-accent/30 hover:bg-vnit-primary/10 dark:hover:bg-vnit-primary/20 transition">
-                                            <td className="py-3 px-4 font-bold">{member.name}</td>
-                                            <td className="py-3 px-4">{member.position}</td>
-                                            <td className="py-3 px-4">{member.department}</td>
-                                            <td className="py-3 px-4 text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                                                {member.email || '-'}
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleEdit(member)}
-                                                        className="bg-vnit-accent hover:bg-vnit-secondary text-white font-bold py-1 px-3 rounded transition"
-                                                    >
-                                                        ✏️ Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(member._id)}
-                                                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded transition"
-                                                    >
-                                                        🗑️ Delete
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
             </div>
         </div>
     );

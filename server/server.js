@@ -3,8 +3,17 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const helmet = require('helmet');
 const morgan = require('morgan');
+
+// Load environment variables FIRST - before any other imports that need them
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+console.log('🔄 Starting VNIT IG App Server...');
+console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔗 MongoDB URI: ${process.env.MONGODB_URI ? 'SET' : 'NOT SET'}`);
+
 const connectDB = require('./config/db');
 
 // Route imports
@@ -15,9 +24,9 @@ const seasonRoutes = require('./routes/seasonRoutes');
 const scoringPresetRoutes = require('./routes/scoringPresetRoutes');
 const studentCouncilRoutes = require('./routes/studentCouncilRoutes');
 const aboutRoutes = require('./routes/aboutRoutes');
-
-// Load environment variables
-dotenv.config();
+const adminRoutes = require('./routes/adminRoutes');
+const playerRoutes = require('./routes/playerRoutes');
+const foulRoutes = require('./routes/foulRoutes');
 
 console.log('🔄 Starting VNIT IG App Server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -60,6 +69,24 @@ app.get('/alive', (req, res) => {
     res.json({ status: 'alive' });
 });
 
+// Socket.io status endpoint
+app.get('/api/socket-status', (req, res) => {
+    const clients = [];
+    for (const [socketId, data] of connectedClients.entries()) {
+        clients.push({
+            socketId,
+            connectedAt: data.connectedAt,
+            transport: data.transport,
+            connectedFor: Math.floor((new Date() - data.connectedAt) / 1000) + 's'
+        });
+    }
+    res.json({
+        totalClients: connectedClients.size,
+        clients,
+        serverTime: new Date()
+    });
+});
+
 // Security middleware
 // Temporarily disabled for debugging - helmet may be causing issues
 // app.use(helmet());
@@ -72,7 +99,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploads
-const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve React frontend in production
@@ -87,11 +113,26 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Socket.io connection handling with error management
+const connectedClients = new Map();
+
 io.on('connection', (socket) => {
     console.log('🔌 Client connected:', socket.id);
+    connectedClients.set(socket.id, {
+        connectedAt: new Date(),
+        transport: socket.conn.transport.name
+    });
+    console.log('📊 Total connected clients:', connectedClients.size);
+
+    // Send initial connection confirmation
+    socket.emit('connected', {
+        socketId: socket.id,
+        timestamp: new Date()
+    });
 
     socket.on('disconnect', (reason) => {
         console.log('❌ Client disconnected:', socket.id, `(${reason})`);
+        connectedClients.delete(socket.id);
+        console.log('📊 Total connected clients:', connectedClients.size);
     });
 
     socket.on('connect_error', (error) => {
@@ -99,7 +140,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('error', (error) => {
-        console.error('❌ Socket error:', error);
+        console.error('❌ Socket error:', socket.id, error);
+    });
+
+    socket.on('ping', () => {
+        socket.emit('pong');
     });
 });
 
@@ -170,6 +215,12 @@ app.use('/api/student-council', studentCouncilRoutes);
 console.log('📍 Student council routes mounted');
 app.use('/api/about', aboutRoutes);
 console.log('📍 About routes mounted');
+app.use('/api/admins', adminRoutes);
+console.log('📍 Admin management routes mounted');
+app.use('/api/players', playerRoutes);
+console.log('📍 Player routes mounted');
+app.use('/api/fouls', foulRoutes);
+console.log('📍 Foul routes mounted');
 
 // Error handler middleware
 app.use((err, req, res, next) => {

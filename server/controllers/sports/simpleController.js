@@ -104,9 +104,20 @@ const updateResult = asyncHandler(async (req, res) => {
 
     await match.save();
 
+    // Emit real-time update
+    const populatedMatch = await SimpleMatch.findById(matchId)
+        .populate('teamA', 'name shortCode logo')
+        .populate('teamB', 'name shortCode logo')
+        .populate('winner', 'name shortCode logo');
+
+    const io = req.app.get('io');
+    if (io) {
+        io.emit('matchUpdate', populatedMatch);
+    }
+
     res.status(200).json({
         success: true,
-        data: match
+        data: populatedMatch
     });
 });
 

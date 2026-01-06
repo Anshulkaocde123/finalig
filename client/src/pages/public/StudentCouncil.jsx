@@ -1,232 +1,161 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import PublicNavbar from '../../components/PublicNavbar';
 import axios from '../../api/axios';
+import { GraduationCap, Mail, Phone, ArrowLeft, User } from 'lucide-react';
+
+const ThreeBackground = React.lazy(() => import('../../components/ThreeBackground'));
 
 const StudentCouncilPage = ({ isDarkMode, setIsDarkMode }) => {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchMembers();
-    }, []);
+    useEffect(() => { fetchMembers(); }, []);
 
     const fetchMembers = async () => {
         try {
             const response = await axios.get('/student-council');
-            // Sort by position priority
             const priorityOrder = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Sports Head', 'Cultural Head', 'Academics Head', 'Member'];
-            const sortedMembers = response.data.data.sort((a, b) => {
-                return priorityOrder.indexOf(a.position) - priorityOrder.indexOf(b.position);
-            });
+            const sortedMembers = (response.data.data || []).sort((a, b) => priorityOrder.indexOf(a.position) - priorityOrder.indexOf(b.position));
             setMembers(sortedMembers);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching members:', error);
-            setLoading(false);
-        }
+        } catch (error) { console.error('Error fetching members:', error); }
+        finally { setLoading(false); }
     };
 
-    const getPositionEmoji = (position) => {
-        const emojiMap = {
-            'President': '👑',
-            'Vice President': '💎',
-            'Secretary': '📋',
-            'Treasurer': '💰',
-            'Sports Head': '⚽',
-            'Cultural Head': '🎭',
-            'Academics Head': '📚',
-            'Member': '👤'
-        };
-        return emojiMap[position] || '👤';
+    const getPositionColor = (pos) => {
+        const colors = { 'President': 'from-yellow-500 to-amber-600', 'Vice President': 'from-blue-500 to-indigo-600', 'Secretary': 'from-purple-500 to-pink-600', 'Treasurer': 'from-green-500 to-emerald-600', 'Sports Head': 'from-red-500 to-orange-600', 'Cultural Head': 'from-pink-500 to-rose-600', 'Academics Head': 'from-cyan-500 to-teal-600' };
+        return colors[pos] || 'from-slate-500 to-slate-600';
     };
+
+    const FallbackBg = () => (
+        <div className={`fixed inset-0 -z-10 ${isDarkMode ? 'bg-[#0a0a0f]' : 'bg-gray-50'}`}>
+            <div className="absolute inset-0">
+                <div className={`absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl ${isDarkMode ? 'bg-purple-500/10' : 'bg-purple-200/30'}`} />
+                <div className={`absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl ${isDarkMode ? 'bg-indigo-500/10' : 'bg-indigo-200/30'}`} />
+            </div>
+        </div>
+    );
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text">
+            <div className={`min-h-screen ${isDarkMode ? 'bg-[#0a0a0f] text-white' : 'bg-gray-50 text-gray-900'}`}>
                 <PublicNavbar isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
-                <div className="flex items-center justify-center h-96">
-                    <div className="text-xl font-bold">Loading Student Council...</div>
+                <div className="flex flex-col items-center justify-center h-96">
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-16 h-16 rounded-full border-4 border-purple-500/30 border-t-purple-500" />
+                    <p className="mt-4 text-gray-500">Loading Student Council...</p>
                 </div>
             </div>
         );
     }
 
-    return (
-        <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text">
-            <PublicNavbar isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
-
-            {/* Hero Section */}
-            <div className="bg-gradient-to-br from-vnit-primary via-purple-900 to-vnit-dark py-20 border-b-4 border-vnit-accent">
-                <div className="container mx-auto px-4 text-center">
-                    <h1 className="text-5xl font-black text-white mb-4">🎓 Student Council</h1>
-                    <p className="text-xl text-vnit-accent font-bold">Meet the Leadership Behind VNIT IG</p>
-                </div>
-            </div>
-
-            {/* Members Grid */}
-            <div className="container mx-auto px-4 py-16">
-                {members.length === 0 ? (
-                    <div className="text-center py-20">
-                        <div className="text-6xl mb-4">📋</div>
-                        <p className="text-2xl font-bold text-light-text-secondary dark:text-dark-text-secondary">
-                            Student Council members coming soon!
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        {/* Group by position */}
-                        {['President', 'Vice President', 'Secretary', 'Treasurer'].some(p => members.some(m => m.position === p)) && (
-                            <div className="mb-16">
-                                <h2 className="text-3xl font-black text-vnit-primary dark:text-vnit-accent mb-8 text-center">
-                                    🏆 Executive Board
-                                </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {members
-                                        .filter(m => ['President', 'Vice President', 'Secretary', 'Treasurer'].includes(m.position))
-                                        .map(member => (
-                                            <MemberCard key={member._id} member={member} />
-                                        ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Department Heads */}
-                        {members.some(m => ['Sports Head', 'Cultural Head', 'Academics Head'].includes(m.position)) && (
-                            <div className="mb-16">
-                                <h2 className="text-3xl font-black text-vnit-primary dark:text-vnit-accent mb-8 text-center">
-                                    ⭐ Department Heads
-                                </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    {members
-                                        .filter(m => ['Sports Head', 'Cultural Head', 'Academics Head'].includes(m.position))
-                                        .map(member => (
-                                            <MemberCard key={member._id} member={member} />
-                                        ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* General Members */}
-                        {members.some(m => m.position === 'Member') && (
-                            <div>
-                                <h2 className="text-3xl font-black text-vnit-primary dark:text-vnit-accent mb-8 text-center">
-                                    👥 Members
-                                </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    {members
-                                        .filter(m => m.position === 'Member')
-                                        .map(member => (
-                                            <MemberCard key={member._id} member={member} />
-                                        ))}
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {/* Back to About */}
-                <div className="flex justify-center mt-16">
-                    <Link
-                        to="/about"
-                        className="bg-gradient-to-r from-vnit-primary to-blue-700 hover:from-vnit-primary/90 hover:to-blue-700/90 text-white font-black py-4 px-8 rounded-xl border-2 border-vnit-accent transition-all text-lg"
-                    >
-                        ← Back to About VNIT IG
-                    </Link>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const MemberCard = ({ member }) => {
-    const getPositionEmoji = (position) => {
-        const emojiMap = {
-            'President': '👑',
-            'Vice President': '💎',
-            'Secretary': '📋',
-            'Treasurer': '💰',
-            'Sports Head': '⚽',
-            'Cultural Head': '🎭',
-            'Academics Head': '📚',
-            'Member': '👤'
-        };
-        return emojiMap[position] || '👤';
-    };
-
-    const getDepartmentColor = (dept) => {
-        const colors = {
-            'CSE': 'from-blue-500 to-blue-700',
-            'CIVIL': 'from-yellow-500 to-yellow-700',
-            'CHEM': 'from-green-500 to-green-700',
-            'EEE': 'from-orange-500 to-orange-700',
-            'ECE': 'from-purple-500 to-purple-700',
-            'MECH': 'from-red-500 to-red-700',
-            'META': 'from-pink-500 to-pink-700',
-            'MINING': 'from-gray-500 to-gray-700'
-        };
-        return colors[dept] || 'from-gray-500 to-gray-700';
-    };
+    const executives = members.filter(m => ['President', 'Vice President', 'Secretary', 'Treasurer'].includes(m.position));
+    const heads = members.filter(m => ['Sports Head', 'Cultural Head', 'Academics Head'].includes(m.position));
+    const others = members.filter(m => !['President', 'Vice President', 'Secretary', 'Treasurer', 'Sports Head', 'Cultural Head', 'Academics Head'].includes(m.position));
 
     return (
-        <div className="bg-light-surface dark:bg-dark-surface rounded-2xl border-2 border-vnit-accent overflow-hidden shadow-lg hover:shadow-2xl transition-all">
-            {/* Photo or Avatar */}
-            <div className={`bg-gradient-to-br ${getDepartmentColor(member.department)} h-48 flex items-center justify-center`}>
-                {member.photo ? (
-                    <img 
-                        src={member.photo} 
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className="text-6xl">{getPositionEmoji(member.position)}</div>
-                )}
-            </div>
+        <div className={`min-h-screen relative ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {isDarkMode ? (
+                <Suspense fallback={<FallbackBg />}><ThreeBackground variant="default" /></Suspense>
+            ) : (<FallbackBg />)}
 
-            {/* Content */}
-            <div className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{getPositionEmoji(member.position)}</span>
-                    <h3 className="text-xl font-black text-vnit-primary dark:text-vnit-accent">
-                        {member.position}
-                    </h3>
+            <div className="relative z-10">
+                <PublicNavbar isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+
+                {/* Hero */}
+                <div className="relative py-16 px-4 text-center">
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+                        <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2, repeat: Infinity }} className="inline-block mb-6">
+                            <GraduationCap className="w-20 h-20 text-purple-500" />
+                        </motion.div>
+                        <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4">
+                            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">Student Council</span>
+                        </h1>
+                        <p className={`text-xl max-w-2xl mx-auto ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Meet the Leadership Behind VNIT IG</p>
+                    </motion.div>
                 </div>
 
-                <h4 className="text-2xl font-black text-light-text dark:text-dark-text mb-1">
-                    {member.name}
-                </h4>
-
-                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4 font-bold">
-                    {member.department}
-                </p>
-
-                {/* Pledge */}
-                {member.pledge && (
-                    <div className="bg-vnit-accent/10 dark:bg-vnit-accent/20 rounded-lg p-4 mb-4 border-l-4 border-vnit-accent">
-                        <p className="text-sm italic text-light-text-secondary dark:text-dark-text-secondary">
-                            "{member.pledge}"
-                        </p>
-                    </div>
-                )}
-
-                {/* Contact Info */}
-                <div className="space-y-2 text-sm">
-                    {member.email && (
-                        <div className="flex items-center gap-2 text-light-text-secondary dark:text-dark-text-secondary">
-                            <span>✉️</span>
-                            <a href={`mailto:${member.email}`} className="hover:text-vnit-accent transition">
-                                {member.email}
-                            </a>
+                <div className="max-w-6xl mx-auto px-4 pb-12">
+                    {members.length === 0 ? (
+                        <div className={`text-center py-16 rounded-3xl ${isDarkMode ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+                            <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-500 text-lg">No council members found</p>
                         </div>
+                    ) : (
+                        <>
+                            {/* Executives */}
+                            {executives.length > 0 && (
+                                <div className="mb-12">
+                                    <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Executive Board</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {executives.map((member, idx) => (
+                                            <motion.div key={member._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}
+                                                className={`rounded-2xl p-6 text-center ${isDarkMode ? 'bg-white/5 border border-white/10 backdrop-blur-xl' : 'bg-white border border-gray-200 shadow-lg'}`}>
+                                                <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-r ${getPositionColor(member.position)} flex items-center justify-center text-white shadow-lg mb-4`}>
+                                                    {member.photo ? <img src={member.photo} alt={member.name} className="w-full h-full rounded-full object-cover" /> : <User className="w-10 h-10" />}
+                                                </div>
+                                                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{member.name}</h3>
+                                                <p className={`text-sm font-semibold bg-gradient-to-r ${getPositionColor(member.position)} bg-clip-text text-transparent`}>{member.position}</p>
+                                                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>{member.department}</p>
+                                                {member.pledge && <p className={`text-xs mt-2 italic ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>"{member.pledge}"</p>}
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Department Heads */}
+                            {heads.length > 0 && (
+                                <div className="mb-12">
+                                    <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Department Heads</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {heads.map((member, idx) => (
+                                            <motion.div key={member._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}
+                                                className={`rounded-2xl p-6 ${isDarkMode ? 'bg-white/5 border border-white/10 backdrop-blur-xl' : 'bg-white border border-gray-200 shadow-lg'}`}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-14 h-14 rounded-full bg-gradient-to-r ${getPositionColor(member.position)} flex items-center justify-center text-white shadow-lg`}>
+                                                        {member.photo ? <img src={member.photo} alt={member.name} className="w-full h-full rounded-full object-cover" /> : <User className="w-7 h-7" />}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{member.name}</h3>
+                                                        <p className={`text-sm font-semibold bg-gradient-to-r ${getPositionColor(member.position)} bg-clip-text text-transparent`}>{member.position}</p>
+                                                        <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>{member.department}</p>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Other Members */}
+                            {others.length > 0 && (
+                                <div>
+                                    <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Members</h2>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {others.map((member, idx) => (
+                                            <motion.div key={member._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.05 }}
+                                                className={`rounded-xl p-4 text-center ${isDarkMode ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+                                                <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-r from-slate-500 to-slate-600 flex items-center justify-center text-white mb-2">
+                                                    {member.photo ? <img src={member.photo} alt={member.name} className="w-full h-full rounded-full object-cover" /> : <User className="w-6 h-6" />}
+                                                </div>
+                                                <h3 className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{member.name}</h3>
+                                                <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>{member.department}</p>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
-                    {member.phone && (
-                        <div className="flex items-center gap-2 text-light-text-secondary dark:text-dark-text-secondary">
-                            <span>📱</span>
-                            <a href={`tel:${member.phone}`} className="hover:text-vnit-accent transition">
-                                {member.phone}
-                            </a>
-                        </div>
-                    )}
+
+                    {/* Back Button */}
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-12 text-center">
+                        <Link to="/" className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'}`}>
+                            <ArrowLeft className="w-5 h-5" /> Back to Home
+                        </Link>
+                    </motion.div>
                 </div>
             </div>
         </div>

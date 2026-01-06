@@ -66,6 +66,13 @@ const createMatch = asyncHandler(async (req, res) => {
 const updateScore = asyncHandler(async (req, res) => {
     const { matchId, setsA, setsB, currentSetScore, setResult, status } = req.body;
 
+    console.log('🏸 Set-based score update:', { matchId, setsA, setsB, currentSetScore, setResult, status });
+
+    if (!matchId) {
+        res.status(400);
+        throw new Error('matchId is required');
+    }
+
     const match = await SetMatch.findById(matchId);
 
     if (!match) {
@@ -73,9 +80,22 @@ const updateScore = asyncHandler(async (req, res) => {
         throw new Error('Match not found');
     }
 
+    console.log('🏸 Current match state:', {
+        scoreA: match.scoreA,
+        scoreB: match.scoreB,
+        currentSet: match.currentSet,
+        status: match.status
+    });
+
     if (match.status === 'COMPLETED') {
         res.status(400);
         throw new Error('Cannot update a completed match');
+    }
+
+    // Initialize currentSet if not exists
+    if (!match.currentSet) {
+        console.log('⚠️ currentSet was undefined, initializing...');
+        match.currentSet = { setNumber: 1, pointsA: 0, pointsB: 0 };
     }
 
     // Update sets won
@@ -85,18 +105,44 @@ const updateScore = asyncHandler(async (req, res) => {
     // Update current set score
     if (currentSetScore) {
         if (currentSetScore.pointsA !== undefined) {
+            if (typeof currentSetScore.pointsA !== 'number' || currentSetScore.pointsA < 0) {
+                res.status(400);
+                throw new Error('currentSetScore.pointsA must be a non-negative number');
+            }
             match.currentSet.pointsA = currentSetScore.pointsA;
         }
         if (currentSetScore.pointsB !== undefined) {
+            if (typeof currentSetScore.pointsB !== 'number' || currentSetScore.pointsB < 0) {
+                res.status(400);
+                throw new Error('currentSetScore.pointsB must be a non-negative number');
+            }
             match.currentSet.pointsB = currentSetScore.pointsB;
         }
     }
 
-    // Add completed set result (e.g., "21-15")
+    // Add completed set result
     if (setResult) {
-        match.setDetails.push(setResult);
-        // Reset current set scores
-        match.currentSet = { pointsA: 0, pointsB: 0 };
+        // Parse the set result (e.g., "21-15" or from currentSet)
+        const setNumber = match.setDetails.length + 1;
+        const pointsA = match.currentSet.pointsA;
+        const pointsB = match.currentSet.pointsB;
+        const winner = pointsA > pointsB ? 'A' : 'B';
+        
+        match.setDetails.push({
+            setNumber,
+            pointsA,
+            pointsB,
+            winner
+        });
+        
+        console.log(`🏸 Set ${setNumber} completed: ${pointsA}-${pointsB}, winner: Team ${winner}`);
+        
+        // Reset current set scores and increment set number
+        match.currentSet = { 
+            setNumber: setNumber + 1, 
+            pointsA: 0, 
+            pointsB: 0 
+        };
     }
 
     // Update status if provided (takes priority over auto-LIVE)
@@ -115,20 +161,36 @@ const updateScore = asyncHandler(async (req, res) => {
         match.winner = match.scoreA > match.scoreB ? match.teamA : match.teamB;
     }
 
-    await match.save();
+    console.log('🏸 Saving match with:', {
+        scoreA: match.scoreA,
+        scoreB: match.scoreB,
+        currentSet: match.currentSet,
+        status: match.status
+    });
 
-    // Emit real-time update
+    try {
+        await match.save();
+        console.log('✅ Set-based match saved successfully');
+    } catch (saveError) {
+        console.error('❌ Error saving set-based match:', saveError);
+        res.status(500);
+        throw new Error(`Failed to save match: ${saveError.message}`);
+    }
+
+    // Emit real-time update with populated match
+    const populatedMatch = await SetMatch.findById(matchId)
+        .populate('teamA', 'name shortCode logo')
+        .populate('teamB', 'name shortCode logo')
+        .populate('winner', 'name shortCode logo');
+        
     const io = req.app.get('io');
     if (io) {
-        const populatedMatch = await SetMatch.findById(matchId)
-            .populate('teamA', 'name shortCode logo')
-            .populate('teamB', 'name shortCode logo');
         io.emit('matchUpdate', populatedMatch);
     }
 
     res.status(200).json({
         success: true,
-        data: match
+        data: populatedMatch
     });
 });
 

@@ -210,6 +210,195 @@ const duplicateScoringPreset = async (req, res) => {
     }
 };
 
+// @desc    Calculate points for a completed match based on preset
+// @route   POST /api/scoring-presets/calculate
+// @access  Public
+const calculateMatchPoints = async (req, res) => {
+    try {
+        const { sport, matchCategory, winnerId, loserId, scoreDiff, isDraw } = req.body;
+
+        // Get default preset for sport
+        const preset = await ScoringPreset.findOne({
+            sport: sport.toUpperCase(),
+            isDefault: true,
+            isActive: true
+        });
+
+        if (!preset) {
+            return res.status(404).json({ 
+                message: 'No default preset found for this sport',
+                suggestion: 'Create a default scoring preset first'
+            });
+        }
+
+        // Calculate base points
+        let winnerPoints = isDraw ? preset.drawPoints : preset.winPoints;
+        let loserPoints = isDraw ? preset.drawPoints : preset.lossPoints;
+
+        // Apply match type multiplier
+        const matchTypeKey = (matchCategory || 'REGULAR').toLowerCase();
+        const multiplier = preset.matchTypeMultipliers?.[matchTypeKey] || 1;
+        winnerPoints = Math.round(winnerPoints * multiplier);
+        loserPoints = Math.round(loserPoints * multiplier);
+
+        // Apply bonus for dominant victory
+        if (!isDraw && preset.bonusPoints && preset.dominantVictoryMargin) {
+            if (scoreDiff >= preset.dominantVictoryMargin) {
+                winnerPoints += preset.bonusPoints;
+            }
+        }
+
+        res.json({
+            success: true,
+            data: {
+                preset: preset.name,
+                sport,
+                matchCategory,
+                winnerPoints: isDraw ? null : winnerPoints,
+                loserPoints: isDraw ? null : loserPoints,
+                drawPoints: isDraw ? winnerPoints : null,
+                multiplierApplied: multiplier,
+                bonusApplied: scoreDiff >= (preset.dominantVictoryMargin || Infinity) ? preset.bonusPoints : 0
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Seed default presets for all sports
+// @route   POST /api/scoring-presets/seed-defaults
+// @access  Private
+const seedDefaultPresets = async (req, res) => {
+    try {
+        const defaultPresets = [
+            {
+                sport: 'CRICKET',
+                name: 'Standard Cricket',
+                description: 'Standard cricket scoring - higher points for finals',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 5,
+                bonusPoints: 2,
+                dominantVictoryMargin: 50, // Win by 50+ runs
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 },
+                sportSpecificRules: { overs: 20, extras: true }
+            },
+            {
+                sport: 'FOOTBALL',
+                name: 'Standard Football',
+                description: 'Standard football scoring',
+                winPoints: 3,
+                lossPoints: 0,
+                drawPoints: 1,
+                bonusPoints: 0,
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 }
+            },
+            {
+                sport: 'BASKETBALL',
+                name: 'Standard Basketball',
+                description: 'Basketball scoring with bonus for large margins',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 0,
+                bonusPoints: 2,
+                dominantVictoryMargin: 20, // Win by 20+ points
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 }
+            },
+            {
+                sport: 'BADMINTON',
+                name: 'Standard Badminton',
+                description: 'Badminton best-of-3 scoring',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 0,
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 },
+                sportSpecificRules: { maxSets: 3, pointsPerSet: 21 }
+            },
+            {
+                sport: 'TABLE_TENNIS',
+                name: 'Standard Table Tennis',
+                description: 'Table tennis best-of-5 scoring',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 0,
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 },
+                sportSpecificRules: { maxSets: 5, pointsPerSet: 11 }
+            },
+            {
+                sport: 'VOLLEYBALL',
+                name: 'Standard Volleyball',
+                description: 'Volleyball best-of-5 scoring',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 0,
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 },
+                sportSpecificRules: { maxSets: 5, pointsPerSet: 25 }
+            },
+            {
+                sport: 'KABADDI',
+                name: 'Standard Kabaddi',
+                description: 'Kabaddi scoring',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 5,
+                bonusPoints: 2,
+                dominantVictoryMargin: 15,
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 }
+            },
+            {
+                sport: 'KHOKHO',
+                name: 'Standard Kho-Kho',
+                description: 'Kho-Kho scoring',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 5,
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 }
+            },
+            {
+                sport: 'CHESS',
+                name: 'Standard Chess',
+                description: 'Chess scoring',
+                winPoints: 10,
+                lossPoints: 0,
+                drawPoints: 5,
+                matchTypeMultipliers: { regular: 1, semifinal: 1.5, final: 2 }
+            }
+        ];
+
+        const created = [];
+        const skipped = [];
+
+        for (const presetData of defaultPresets) {
+            const existing = await ScoringPreset.findOne({ 
+                sport: presetData.sport, 
+                isDefault: true 
+            });
+
+            if (existing) {
+                skipped.push(presetData.sport);
+                continue;
+            }
+
+            const preset = await ScoringPreset.create({
+                ...presetData,
+                isDefault: true,
+                isActive: true
+            });
+            created.push(preset.sport);
+        }
+
+        res.status(201).json({
+            success: true,
+            message: `Created ${created.length} presets, skipped ${skipped.length}`,
+            created,
+            skipped
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     createScoringPreset,
     getScoringPresets,
@@ -217,5 +406,7 @@ module.exports = {
     getScoringPreset,
     updateScoringPreset,
     deleteScoringPreset,
-    duplicateScoringPreset
+    duplicateScoringPreset,
+    calculateMatchPoints,
+    seedDefaultPresets
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MatchCard = ({ match, formatIST, isDarkMode }) => {
     const navigate = useNavigate();
@@ -23,272 +24,328 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
         });
     };
 
-    // Status badge config
     const getStatusConfig = () => {
         switch (match.status) {
             case 'LIVE':
                 return {
-                    bgGradient: 'from-red-600 to-red-700',
-                    borderColor: 'border-red-400/60',
-                    ringColor: 'ring-red-500/30',
-                    textColor: 'text-red-100',
-                    badgeText: '🔴 LIVE',
-                    badgeBg: 'bg-red-500/30',
-                    icon: (
-                        <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute h-full w-full rounded-full bg-red-300 opacity-75"></span>
-                            <span className="relative rounded-full h-2.5 w-2.5 bg-red-300"></span>
-                        </span>
-                    )
+                    gradient: 'from-red-500/10 via-red-500/5 to-transparent',
+                    border: 'border-red-500/30',
+                    badge: 'bg-gradient-to-r from-red-500 to-rose-600',
+                    badgeText: 'LIVE',
+                    glow: 'shadow-lg shadow-red-500/20',
+                    accent: 'text-red-500'
                 };
             case 'COMPLETED':
                 return {
-                    bgGradient: 'from-green-600/40 to-green-700/40',
-                    borderColor: 'border-green-500/50',
-                    ringColor: 'ring-green-500/20',
-                    textColor: 'text-green-300',
-                    badgeText: '✅ COMPLETED',
-                    badgeBg: 'bg-green-500/30',
-                    icon: '✓'
+                    gradient: 'from-emerald-500/10 via-emerald-500/5 to-transparent',
+                    border: 'border-emerald-500/20',
+                    badge: 'bg-gradient-to-r from-emerald-500 to-green-600',
+                    badgeText: 'FINAL',
+                    accent: 'text-emerald-500'
                 };
-            case 'SCHEDULED':
             default:
                 return {
-                    bgGradient: 'from-blue-600/20 to-indigo-700/20',
-                    borderColor: 'border-blue-500/30',
-                    ringColor: 'ring-blue-500/20',
-                    textColor: 'text-blue-300',
-                    badgeText: '📅 UPCOMING',
-                    badgeBg: 'bg-blue-500/30',
-                    icon: '📅'
+                    gradient: 'from-blue-500/10 via-blue-500/5 to-transparent',
+                    border: 'border-blue-500/20',
+                    badge: 'bg-gradient-to-r from-blue-500 to-indigo-600',
+                    badgeText: formatTime(match.scheduledAt),
+                    accent: 'text-blue-500'
                 };
         }
     };
 
-    const status = getStatusConfig();
+    const config = getStatusConfig();
 
-    // Render score based on sport type
-    const renderScore = () => {
-        if (match.status === 'SCHEDULED') {
-            return (
-                <div className="text-center py-3">
-                    <div className="text-3xl md:text-4xl font-black text-gray-500 mb-2">VS</div>
-                    <div className="text-xs md:text-sm text-gray-400 font-medium">
-                        {formatTime(match.scheduledAt)}
-                    </div>
-                </div>
-            );
+    const getScore = () => {
+        if (match.sport === 'CRICKET') {
+            const scoreA = match.scoreA || {};
+            const scoreB = match.scoreB || {};
+            return {
+                teamA: `${scoreA.runs || 0}/${scoreA.wickets || 0}`,
+                teamAExtra: `(${scoreA.overs || 0} ov)`,
+                teamB: `${scoreB.runs || 0}/${scoreB.wickets || 0}`,
+                teamBExtra: `(${scoreB.overs || 0} ov)`
+            };
         }
-
-        switch (match.sport) {
-            case 'CRICKET':
-                return (
-                    <div className="text-center py-2">
-                        <div className="flex items-center justify-center gap-3 md:gap-4">
-                            <div className="text-right">
-                                <div className="text-2xl md:text-4xl font-black text-white leading-tight">
-                                    {match.scoreA?.runs || 0}<span className="text-lg md:text-2xl text-gray-400">/{match.scoreA?.wickets || 0}</span>
-                                </div>
-                                <div className="text-[11px] md:text-xs text-gray-500 font-semibold mt-0.5">
-                                    {match.scoreA?.overs || 0} ov
-                                </div>
-                            </div>
-                            <div className="text-gray-600 text-2xl font-bold">-</div>
-                            <div className="text-left">
-                                <div className="text-2xl md:text-4xl font-black text-white leading-tight">
-                                    {match.scoreB?.runs || 0}<span className="text-lg md:text-2xl text-gray-400">/{match.scoreB?.wickets || 0}</span>
-                                </div>
-                                <div className="text-[11px] md:text-xs text-gray-500 font-semibold mt-0.5">
-                                    {match.scoreB?.overs || 0} ov
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'BADMINTON':
-            case 'TABLE_TENNIS':
-            case 'VOLLEYBALL':
-                return (
-                    <div className="text-center py-2">
-                        <div className="text-4xl md:text-5xl font-black text-white mb-1">
-                            {match.scoreA || 0} <span className="text-gray-600">-</span> {match.scoreB || 0}
-                        </div>
-                        <div className="text-[11px] md:text-xs text-gray-500 font-bold uppercase tracking-wider">
-                            Sets Won
-                        </div>
-                        {match.currentSet && match.status === 'LIVE' && (
-                            <div className="text-xs md:text-sm text-indigo-300 mt-2 font-bold bg-indigo-500/20 px-3 py-1 rounded-full inline-block border border-indigo-500/40">
-                                Current: {match.currentSet.pointsA || 0} - {match.currentSet.pointsB || 0}
-                            </div>
-                        )}
-                    </div>
-                );
-
-            case 'FOOTBALL':
-            case 'BASKETBALL':
-            case 'KHOKHO':
-            case 'KABADDI':
-                return (
-                    <div className="text-center py-2">
-                        <div className="text-5xl md:text-6xl font-black text-white">
-                            {match.scoreA || 0} <span className="text-gray-600">-</span> {match.scoreB || 0}
-                        </div>
-                        {match.period && (
-                            <div className="text-xs md:text-sm text-gray-400 font-semibold mt-2">
-                                {match.sport === 'FOOTBALL' && `Half ${match.period} of ${match.maxPeriods || 2}`}
-                                {match.sport === 'BASKETBALL' && `Q${match.period} of ${match.maxPeriods || 4}`}
-                                {match.sport === 'KHOKHO' && `Inning ${match.period}`}
-                                {match.sport === 'KABADDI' && `Half ${match.period}`}
-                            </div>
-                        )}
-                    </div>
-                );
-
-            case 'CHESS':
-                return (
-                    <div className="text-center py-3">
-                        {match.status === 'COMPLETED' && match.winner ? (
-                            <div>
-                                <div className="text-sm font-bold text-yellow-400 mb-2">
-                                    {match.resultType || 'Concluded'}
-                                </div>
-                                <div className="text-lg text-gray-300 font-semibold">Winner Decided</div>
-                            </div>
-                        ) : (
-                            <div className="text-3xl font-black text-gray-400">In Progress...</div>
-                        )}
-                    </div>
-                );
-
-            default:
-                return (
-                    <div className="text-center py-2">
-                        <div className="text-4xl md:text-5xl font-black text-white">
-                            {match.scoreA || 0} <span className="text-gray-600">-</span> {match.scoreB || 0}
-                        </div>
-                    </div>
-                );
-        }
+        return {
+            teamA: match.scoreA || 0,
+            teamB: match.scoreB || 0
+        };
     };
 
-    return (
-        <div
-            onClick={() => navigate(`/match/${match._id}`)}
-            className={`bg-gradient-to-br ${status.bgGradient} rounded-2xl overflow-hidden shadow-2xl border-2 ${status.borderColor} ring-2 ${status.ringColor} 
-                cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] active:scale-[0.98] 
-                backdrop-blur-sm relative group`}
-        >
-            {/* Animated corner accent - Live matches only */}
-            {match.status === 'LIVE' && (
-                <>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-16 -mt-16 group-hover:animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-red-500/5 rounded-full -ml-12 -mb-12"></div>
-                </>
-            )}
+    const score = getScore();
+    const teamA = match.teamA || {};
+    const teamB = match.teamB || {};
 
-            {/* Header Section */}
-            <div className={`bg-gradient-to-r from-gray-900/80 to-gray-800/80 px-4 py-3 flex justify-between items-center border-b border-gray-700/50 backdrop-blur-sm`}>
-                <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 bg-gradient-to-r from-gray-700 to-gray-800 rounded-lg text-xs font-bold text-gray-200 uppercase tracking-widest border border-gray-600/50">
-                        {match.sport.replace('_', ' ')}
-                    </span>
-                    {match.venue && (
-                        <span className="text-xs text-gray-400 font-medium hidden sm:inline">📍 {match.venue}</span>
-                    )}
-                </div>
-                <span className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${status.badgeBg} ${status.textColor} border border-white/20`}>
-                    {status.icon}
-                    {status.badgeText}
-                </span>
-            </div>
+    const getSportIcon = (sport) => {
+        const icons = {
+            CRICKET: '🏏',
+            FOOTBALL: '⚽',
+            BASKETBALL: '🏀',
+            VOLLEYBALL: '🏐',
+            BADMINTON: '🏸',
+            TABLE_TENNIS: '🏓',
+            KHOKHO: '🏃',
+            KABADDI: '🤼',
+            CHESS: '♟️'
+        };
+        return icons[sport] || '🏆';
+    };
 
-            {/* Main Content */}
-            <div className="p-5 md:p-6">
-                {/* Teams and Score */}
-                <div className="flex w-full justify-between items-stretch gap-4">
-                    {/* Team A */}
-                    <div className="flex-1 flex flex-col items-center justify-center py-2">
-                        <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full flex items-center justify-center mb-2 border border-blue-400/30">
-                            {match.teamA?.logo ? (
-                                <img
-                                    src={getLogoUrl(match.teamA.logo)}
-                                    alt={match.teamA.name}
-                                    className="w-10 h-10 md:w-12 md:h-12 object-contain"
-                                />
-                            ) : (
-                                <span className="text-lg md:text-xl font-bold text-blue-400">
-                                    {match.teamA?.shortCode?.slice(0, 1)}
-                                </span>
-                            )}
-                        </div>
-                        <div className="text-center">
-                            <div className="text-sm md:text-base font-bold text-white truncate max-w-20">
-                                {match.teamA?.shortCode || 'Team A'}
-                            </div>
-                            <div className="text-[11px] md:text-xs text-gray-500 font-medium">
-                                {match.teamA?.name?.split(' ').slice(0, 2).join(' ')}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Score Display */}
-                    <div className="flex-[1.2] flex flex-col items-center justify-center">
-                        {renderScore()}
-                    </div>
-
-                    {/* Team B */}
-                    <div className="flex-1 flex flex-col items-center justify-center py-2">
-                        <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-pink-400/20 to-rose-400/20 rounded-full flex items-center justify-center mb-2 border border-pink-400/30">
-                            {match.teamB?.logo ? (
-                                <img
-                                    src={getLogoUrl(match.teamB.logo)}
-                                    alt={match.teamB.name}
-                                    className="w-10 h-10 md:w-12 md:h-12 object-contain"
-                                />
-                            ) : (
-                                <span className="text-lg md:text-xl font-bold text-pink-400">
-                                    {match.teamB?.shortCode?.slice(0, 1)}
-                                </span>
-                            )}
-                        </div>
-                        <div className="text-center">
-                            <div className="text-sm md:text-base font-bold text-white truncate max-w-20">
-                                {match.teamB?.shortCode || 'Team B'}
-                            </div>
-                            <div className="text-[11px] md:text-xs text-gray-500 font-medium">
-                                {match.teamB?.name?.split(' ').slice(0, 2).join(' ')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Winner Badge */}
-                {match.status === 'COMPLETED' && match.winner && (
-                    <div className="mt-4 pt-4 border-t border-gray-700/50">
-                        <div className="text-xs text-gray-500 text-center font-semibold mb-2">MATCH RESULT</div>
-                        <div className="text-center text-sm font-bold text-yellow-400">
-                            🏆 {match.winner?.shortCode} Won
-                        </div>
+    // Team Logo/Avatar Component
+    const TeamAvatar = ({ team, isReversed = false }) => (
+        <div className={`flex items-center gap-4 ${isReversed ? 'flex-row-reverse' : ''}`}>
+            <motion.div 
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                className="relative"
+            >
+                {team.logo ? (
+                    <img 
+                        src={getLogoUrl(team.logo)} 
+                        alt={team.shortCode}
+                        className={`w-14 h-14 object-contain rounded-2xl p-1.5 ${
+                            isDarkMode ? 'bg-white/10' : 'bg-gray-100'
+                        }`}
+                    />
+                ) : (
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black ${
+                        isDarkMode 
+                            ? 'bg-gradient-to-br from-white/10 to-white/5 text-white' 
+                            : 'bg-gradient-to-br from-gray-100 to-gray-50 text-gray-600'
+                    }`}>
+                        {team.shortCode?.charAt(0) || '?'}
                     </div>
                 )}
-
-                {/* Time Info */}
-                {match.status === 'SCHEDULED' && (
-                    <div className="mt-4 pt-4 border-t border-gray-700/50">
-                        <div className="text-xs text-center text-gray-500 font-semibold">SCHEDULED</div>
-                        <div className="text-xs text-center text-gray-400 mt-1 font-medium">
-                            {formatTime(match.scheduledAt)}
-                        </div>
-                    </div>
+                {/* Winner indicator */}
+                {match.status === 'COMPLETED' && match.winner?._id === team._id && (
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-xs shadow-lg"
+                    >
+                        👑
+                    </motion.div>
                 )}
-            </div>
-
-            {/* Click Hint */}
-            <div className="px-5 pb-4 text-center text-xs text-gray-600 group-hover:text-gray-400 transition-colors font-medium">
-                Click to view details →
+            </motion.div>
+            <div className={isReversed ? 'text-right' : 'text-left'}>
+                <div className={`font-black text-lg tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {team.shortCode || 'TBD'}
+                </div>
+                <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {team.name || ''}
+                </div>
             </div>
         </div>
+    );
+
+    return (
+        <motion.div
+            onClick={() => navigate(`/match/${match._id}`)}
+            whileHover={{ scale: 1.01, y: -2 }}
+            whileTap={{ scale: 0.99 }}
+            className={`relative overflow-hidden cursor-pointer transition-all duration-300 ${
+                match.status === 'LIVE' ? config.glow : ''
+            }`}
+        >
+            {/* Glassmorphism Card */}
+            <div className={`relative p-6 rounded-3xl backdrop-blur-xl border ${config.border} ${
+                isDarkMode 
+                    ? 'bg-white/5 hover:bg-white/[0.08]' 
+                    : 'bg-white/80 hover:bg-white shadow-lg'
+            }`}>
+                {/* Background gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-r ${config.gradient} rounded-3xl pointer-events-none`} />
+                
+                {/* Live pulse effect */}
+                {match.status === 'LIVE' && (
+                    <motion.div
+                        animate={{ opacity: [0.5, 0.2, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-transparent to-red-500/10 rounded-3xl pointer-events-none"
+                    />
+                )}
+
+                <div className="relative">
+                    {/* Header Row - Sport & Status */}
+                    <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-3">
+                            <motion.span 
+                                whileHover={{ rotate: 20 }}
+                                className="text-2xl"
+                            >
+                                {getSportIcon(match.sport)}
+                            </motion.span>
+                            <div>
+                                <span className={`text-xs font-bold uppercase tracking-widest ${
+                                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}>
+                                    {match.sport?.replace('_', ' ')}
+                                </span>
+                                {match.venue && (
+                                    <div className={`text-xs ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                                        📍 {match.venue}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        {/* Status Badge */}
+                        <motion.div 
+                            whileHover={{ scale: 1.05 }}
+                            className={`px-4 py-1.5 rounded-full text-xs font-bold text-white ${config.badge} ${
+                                match.status === 'LIVE' ? 'animate-pulse' : ''
+                            }`}
+                        >
+                            {match.status === 'LIVE' && (
+                                <span className="mr-2 inline-flex">
+                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span>
+                                </span>
+                            )}
+                            {config.badgeText}
+                        </motion.div>
+                    </div>
+
+                    {/* Main Content - Teams & Score */}
+                    <div className="flex items-center">
+                        {/* Team A */}
+                        <div className="flex-1">
+                            <TeamAvatar team={teamA} />
+                        </div>
+
+                        {/* Score Section */}
+                        <div className="px-8">
+                            {match.status === 'SCHEDULED' ? (
+                                <motion.div 
+                                    animate={{ scale: [1, 1.1, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className={`text-2xl font-black ${isDarkMode ? 'text-gray-600' : 'text-gray-300'}`}
+                                >
+                                    VS
+                                </motion.div>
+                            ) : match.sport === 'CRICKET' ? (
+                                <div className="text-center space-y-2">
+                                    <div className="flex items-baseline gap-4 justify-center">
+                                        <div>
+                                            <motion.div 
+                                                key={score.teamA}
+                                                initial={{ scale: 1.2, color: '#22c55e' }}
+                                                animate={{ scale: 1, color: isDarkMode ? '#fff' : '#111' }}
+                                                className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                            >
+                                                {score.teamA}
+                                            </motion.div>
+                                            <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                                {score.teamAExtra}
+                                            </div>
+                                        </div>
+                                        <span className={`text-sm font-bold ${isDarkMode ? 'text-gray-700' : 'text-gray-300'}`}>—</span>
+                                        <div>
+                                            <motion.div 
+                                                key={score.teamB}
+                                                initial={{ scale: 1.2, color: '#22c55e' }}
+                                                animate={{ scale: 1, color: isDarkMode ? '#fff' : '#111' }}
+                                                className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                            >
+                                                {score.teamB}
+                                            </motion.div>
+                                            <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                                {score.teamBExtra}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-4">
+                                    <motion.span 
+                                        key={score.teamA}
+                                        initial={{ scale: 1.3 }}
+                                        animate={{ scale: 1 }}
+                                        className={`text-4xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                    >
+                                        {score.teamA}
+                                    </motion.span>
+                                    <span className={`text-xl font-bold ${isDarkMode ? 'text-gray-700' : 'text-gray-300'}`}>—</span>
+                                    <motion.span 
+                                        key={score.teamB}
+                                        initial={{ scale: 1.3 }}
+                                        animate={{ scale: 1 }}
+                                        className={`text-4xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                    >
+                                        {score.teamB}
+                                    </motion.span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Team B */}
+                        <div className="flex-1 flex justify-end">
+                            <TeamAvatar team={teamB} isReversed={true} />
+                        </div>
+                    </div>
+
+                    {/* Footer Row - Additional Info */}
+                    <AnimatePresence>
+                        {(match.toss?.winner || match.status === 'COMPLETED' || 
+                          match.cardsA?.yellow > 0 || match.cardsA?.red > 0 || 
+                          match.cardsB?.yellow > 0 || match.cardsB?.red > 0) && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className={`mt-5 pt-4 border-t flex items-center justify-center gap-6 flex-wrap ${
+                                    isDarkMode ? 'border-white/10' : 'border-gray-200'
+                                }`}
+                            >
+                                {/* Toss Info */}
+                                {match.toss?.winner && (
+                                    <div className={`text-xs font-medium ${isDarkMode ? 'text-yellow-500/80' : 'text-yellow-600'}`}>
+                                        🪙 {(() => {
+                                            const tossWinnerId = match.toss.winner?._id?.toString() || match.toss.winner?.toString();
+                                            const teamAId = teamA?._id?.toString();
+                                            return tossWinnerId === teamAId ? teamA.shortCode : teamB.shortCode;
+                                        })()} won toss • {match.toss.decision}
+                                    </div>
+                                )}
+
+                                {/* Cards/Fouls */}
+                                {(match.cardsA?.yellow > 0 || match.cardsA?.red > 0 || match.cardsB?.yellow > 0 || match.cardsB?.red > 0) && (
+                                    <div className="flex gap-4 text-xs">
+                                        {(match.cardsA?.yellow > 0 || match.cardsA?.red > 0) && (
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                                                {teamA.shortCode}: {match.cardsA?.yellow > 0 && `🟨${match.cardsA.yellow}`} {match.cardsA?.red > 0 && `🟥${match.cardsA.red}`}
+                                            </span>
+                                        )}
+                                        {(match.cardsB?.yellow > 0 || match.cardsB?.red > 0) && (
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                                                {teamB.shortCode}: {match.cardsB?.yellow > 0 && `🟨${match.cardsB.yellow}`} {match.cardsB?.red > 0 && `🟥${match.cardsB.red}`}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Winner announcement */}
+                                {match.status === 'COMPLETED' && match.winner && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className={`text-sm font-bold ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
+                                    >
+                                        🏆 {match.winner.shortCode || match.winner.name} wins!
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Hover shine effect */}
+                <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full pointer-events-none"
+                    whileHover={{ translateX: '200%' }}
+                    transition={{ duration: 0.6 }}
+                />
+            </div>
+        </motion.div>
     );
 };
 

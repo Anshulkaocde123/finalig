@@ -69,13 +69,128 @@ const createMatch = asyncHandler(async (req, res) => {
  * @access  Public (for now)
  */
 const updateScore = asyncHandler(async (req, res) => {
-    const { matchId, pointsA, pointsB, period, status } = req.body;
+    const { matchId, pointsA, pointsB, period, status, toss, timerAction, timerData, penaltyShootout } = req.body;
+
+    if (!matchId) {
+        res.status(400);
+        throw new Error('matchId is required');
+    }
 
     const match = await GoalMatch.findById(matchId);
 
     if (!match) {
         res.status(404);
         throw new Error('Match not found');
+    }
+    
+    // Handle penalty shootout update
+    if (penaltyShootout !== undefined) {
+        match.penaltyShootout = penaltyShootout;
+        
+        // If shootout is completed, update match status and winner
+        if (penaltyShootout.status === 'COMPLETED' && penaltyShootout.winner) {
+            match.status = 'COMPLETED';
+            match.winner = penaltyShootout.winner === 'A' ? match.teamA : match.teamB;
+        }
+        
+        await match.save();
+        
+        const populatedMatch = await GoalMatch.findById(matchId)
+            .populate('teamA', 'name shortCode logo')
+            .populate('teamB', 'name shortCode logo')
+            .populate('winner', 'name shortCode logo');
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('matchUpdate', populatedMatch);
+        }
+
+        return res.json({
+            success: true,
+            message: 'Penalty shootout updated',
+            data: populatedMatch
+        });
+    }
+
+    // Handle toss update first
+    if (toss !== undefined) {
+        if (toss === null) {
+            match.toss = { winner: null, decision: null, conductedAt: null };
+        } else {
+            match.toss = {
+                winner: toss.winner,
+                decision: toss.decision,
+                conductedAt: new Date()
+            };
+        }
+        
+        await match.save();
+        
+        const populatedMatch = await GoalMatch.findById(matchId)
+            .populate('teamA', 'name shortCode logo')
+            .populate('teamB', 'name shortCode logo');
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('matchUpdate', populatedMatch);
+        }
+
+        return res.json({
+            success: true,
+            message: 'Toss recorded',
+            data: populatedMatch
+        });
+    }
+
+    // Handle timer actions
+    if (timerAction && timerData) {
+        if (!match.timer) {
+            match.timer = { isRunning: false, isPaused: false, elapsedSeconds: 0, addedTime: 0 };
+        }
+        
+        switch (timerAction) {
+            case 'start':
+                match.timer.isRunning = true;
+                match.timer.isPaused = false;
+                match.timer.startTime = new Date();
+                break;
+            case 'pause':
+                match.timer.isPaused = true;
+                match.timer.elapsedSeconds = timerData.elapsed || match.timer.elapsedSeconds;
+                break;
+            case 'resume':
+                match.timer.isPaused = false;
+                match.timer.startTime = new Date();
+                break;
+            case 'reset':
+                match.timer = { isRunning: false, isPaused: false, elapsedSeconds: 0, addedTime: 0, startTime: null };
+                break;
+            case 'addTime':
+                match.timer.addedTime = (match.timer.addedTime || 0) + (timerData.additionalSeconds || timerData.seconds || 0);
+                break;
+            case 'setTime':
+                match.timer.elapsedSeconds = timerData.elapsedSeconds || 0;
+                match.timer.isRunning = false;
+                match.timer.isPaused = false;
+                break;
+        }
+        
+        await match.save();
+        
+        const populatedMatch = await GoalMatch.findById(matchId)
+            .populate('teamA', 'name shortCode logo')
+            .populate('teamB', 'name shortCode logo');
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('matchUpdate', populatedMatch);
+        }
+
+        return res.json({
+            success: true,
+            message: `Timer ${timerAction}`,
+            data: populatedMatch
+        });
     }
 
     if (match.status === 'COMPLETED') {
@@ -84,11 +199,27 @@ const updateScore = asyncHandler(async (req, res) => {
     }
 
     // Update scores
-    if (pointsA !== undefined) match.scoreA = pointsA;
-    if (pointsB !== undefined) match.scoreB = pointsB;
+    if (pointsA !== undefined) {
+        if (typeof pointsA !== 'number' || pointsA < 0) {
+            res.status(400);
+            throw new Error('pointsA must be a non-negative number');
+        }
+        match.scoreA = pointsA;
+    }
+    if (pointsB !== undefined) {
+        if (typeof pointsB !== 'number' || pointsB < 0) {
+            res.status(400);
+            throw new Error('pointsB must be a non-negative number');
+        }
+        match.scoreB = pointsB;
+    }
 
     // Update period
     if (period !== undefined) {
+        if (typeof period !== 'number' || period < 1) {
+            res.status(400);
+            throw new Error('Period must be a positive number');
+        }
         if (period > match.maxPeriods) {
             res.status(400);
             throw new Error(`Period cannot exceed ${match.maxPeriods}`);
@@ -116,20 +247,28 @@ const updateScore = asyncHandler(async (req, res) => {
         // If equal, winner remains null (draw)
     }
 
-    await match.save();
+    try {
+        await match.save();
+    } catch (saveError) {
+        console.error('❌ Error saving match:', saveError);
+        res.status(500);
+        throw new Error(`Failed to save match: ${saveError.message}`);
+    }
 
-    // Emit real-time update
+    // Emit real-time update with populated match
+    const populatedMatch = await GoalMatch.findById(matchId)
+        .populate('teamA', 'name shortCode logo')
+        .populate('teamB', 'name shortCode logo')
+        .populate('winner', 'name shortCode logo');
+        
     const io = req.app.get('io');
     if (io) {
-        const populatedMatch = await GoalMatch.findById(matchId)
-            .populate('teamA', 'name shortCode logo')
-            .populate('teamB', 'name shortCode logo');
         io.emit('matchUpdate', populatedMatch);
     }
 
     res.status(200).json({
         success: true,
-        data: match
+        data: populatedMatch
     });
 });
 
