@@ -96,6 +96,17 @@ const AdminLayout = ({ isDarkMode, setIsDarkMode }) => {
                                 VNIT Sports Admin
                             </h1>
                             {!isMobile && (
+                                <button
+                                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                    className={`p-1.5 rounded-lg transition-colors ${
+                                        isDarkMode ? 'hover:bg-slate-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                                    }`}
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
+
                         <nav className="p-3 sm:p-4 space-y-1 flex-1 overflow-y-auto">
                             {navItems.map((item) => {
                                 const isActive = location.pathname === item.path;
@@ -104,37 +115,30 @@ const AdminLayout = ({ isDarkMode, setIsDarkMode }) => {
                                         key={item.path}
                                         to={item.path}
                                         onClick={() => isMobile && setIsSidebarOpen(false)}
-                                        className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-all duration-200 text-sm sm:text-base ${isActive
-                                            ? isDarkMode
-                                                ? 'bg-indigo-600/30 text-indigo-300 font-medium'
-                                                : 'bg-indigo-50 text-indigo-700 font-medium shadow-sm'
-                                            : isDarkMode
-                                                ? 'text-gray-300 hover:bg-slate-800 hover:text-white'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                            }`}
+                                        className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-all duration-200 text-sm sm:text-base ${
+                                            isActive
+                                                ? isDarkMode
+                                                    ? 'bg-indigo-600/30 text-indigo-300 font-medium'
+                                                    : 'bg-indigo-50 text-indigo-700 font-medium shadow-sm'
+                                                : isDarkMode
+                                                    ? 'text-gray-300 hover:bg-slate-800 hover:text-white'
+                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                        }`}
                                     >
                                         {item.name}
                                     </Link>
                                 );
                             })}
-                                                : 'bg-indigo-50 text-indigo-700 font-medium shadow-sm'
-                                    : isDarkMode
-                                        ? 'text-gray-300 hover:bg-slate-800 hover:text-white'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                            >
-                                {item.name}
-                            </Link>
-                        );
-                    })}
-                </nav>
-        {/* Dark Mode Toggle & Logout */}
+                        </nav>
+
+                        {/* Dark Mode Toggle & Logout */}
                         <div className={`p-3 sm:p-4 space-y-2 border-t ${isDarkMode ? 'border-slate-800' : 'border-gray-200'}`}>
                             <button
                                 onClick={() => setIsDarkMode(!isDarkMode)}
-                                className={`w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-sm sm:text-base ${isDarkMode
-                                    ? 'bg-slate-800 hover:bg-slate-700 text-yellow-300'
-                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                className={`w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-sm sm:text-base ${
+                                    isDarkMode
+                                        ? 'bg-slate-800 hover:bg-slate-700 text-yellow-300'
+                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                                 }`}
                             >
                                 {isDarkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -142,9 +146,10 @@ const AdminLayout = ({ isDarkMode, setIsDarkMode }) => {
                             </button>
                             <button
                                 onClick={handleLogout}
-                                className={`w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors font-medium text-sm sm:text-base ${isDarkMode
-                                    ? 'text-red-400 hover:bg-red-600/20'
-                                    : 'text-red-600 hover:bg-red-50'
+                                className={`w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors font-medium text-sm sm:text-base ${
+                                    isDarkMode
+                                        ? 'text-red-400 hover:bg-red-600/20'
+                                        : 'text-red-600 hover:bg-red-50'
                                 }`}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,8 +161,8 @@ const AdminLayout = ({ isDarkMode, setIsDarkMode }) => {
                     </motion.aside>
                 )}
             </AnimatePresence>
- ${isMobile ? 'w-full' : ''}`}>
-                <div className={`p-4 sm:p-6 md:p-8 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-gray-100 text-gray-900'} ${isMobile ? 'pt-16' : '
+
+            {/* Desktop Toggle Button (when sidebar is closed) */}
             {!isMobile && !isSidebarOpen && (
                 <motion.button
                     initial={{ opacity: 0, x: -20 }}
@@ -169,12 +174,11 @@ const AdminLayout = ({ isDarkMode, setIsDarkMode }) => {
                 >
                     <ChevronRight className="w-6 h-6" />
                 </motion.button>
-            )}v>
-            </aside>
+            )}
 
             {/* Main Content */}
-            <main className={`flex-1 overflow-auto ${isDarkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
-                <div className={`p-8 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
+            <main className={`flex-1 overflow-auto ${isDarkMode ? 'bg-slate-950' : 'bg-gray-100'} ${isMobile ? 'w-full' : ''}`}>
+                <div className={`p-4 sm:p-6 md:p-8 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-gray-100 text-gray-900'} ${isMobile ? 'pt-16' : ''}`}>
                     <Outlet />
                 </div>
             </main>
