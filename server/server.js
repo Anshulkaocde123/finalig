@@ -105,19 +105,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve React frontend in production
-const clientBuildPath = path.join(__dirname, '../client/dist');
-console.log('📁 Static files path:', clientBuildPath);
-console.log('🔍 NODE_ENV:', JSON.stringify(process.env.NODE_ENV));
-console.log('🔍 Is production?', process.env.NODE_ENV?.trim() === 'production');
-
-const fs = require('fs');
-if (fs.existsSync(clientBuildPath)) {
-    console.log('✅ Client build directory exists');
-    const files = fs.readdirSync(clientBuildPath);
-    console.log('📂 Files in dist:', files.join(', '));
+if (process.env.NODE_ENV === 'production') {
+    const clientBuildPath = path.join(__dirname, '../client/dist');
+    console.log('📁 Serving static files from:', clientBuildPath);
+    
+    const fs = require('fs');
+    if (fs.existsSync(clientBuildPath)) {
+        console.log('✅ Client build directory exists');
+        const files = fs.readdirSync(clientBuildPath);
+        console.log('📂 Files in dist:', files.slice(0, 5).join(', '));
+    } else {
+        console.log('❌ Client build directory NOT found');
+    }
+    
     app.use(express.static(clientBuildPath));
-} else {
-    console.log('❌ Client build directory NOT found at:', clientBuildPath);
 }
 
 // Logging middleware (development only)
@@ -246,29 +247,30 @@ app.use((err, req, res, next) => {
 });
 
 // React fallback for client-side routing - AFTER all API routes
-const clientBuildPath = path.join(__dirname, '../client/dist');
-const fs = require('fs');
-const indexPath = path.join(clientBuildPath, 'index.html');
-
-console.log('📍 Setting up SPA fallback route');
-console.log('📁 Index path:', indexPath);
-console.log('📄 Index exists:', fs.existsSync(indexPath));
-
-// Use app.get() for catch-all (more reliable)
-app.get('*', (req, res) => {
-    // Don't interfere with API routes
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
-        return res.status(404).json({ error: 'Not found' });
-    }
+if (process.env.NODE_ENV === 'production') {
+    const clientBuildPath = path.join(__dirname, '../client/dist');
+    const fs = require('fs');
+    const indexPath = path.join(clientBuildPath, 'index.html');
     
-    if (fs.existsSync(indexPath)) {
+    console.log('📍 Setting up SPA fallback route');
+    console.log('📁 Index path:', indexPath);
+    console.log('📄 Index exists:', fs.existsSync(indexPath));
+    
+    app.get('*', (req, res) => {
+        // Don't interfere with API routes
+        if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+            return res.status(404).json({ error: 'Not found' });
+        }
+        
         console.log('🔄 SPA fallback for:', req.path);
-        res.sendFile(indexPath);
-    } else {
-        console.error('❌ index.html not found!');
-        res.status(404).send('Application not built - please contact administrator');
-    }
-});
+        res.sendFile(indexPath, (err) => {
+            if (err) {
+                console.error('❌ Error sending file:', err.message);
+                res.status(500).send('Error loading application');
+            }
+        });
+    });
+}
 
 // Port configuration
 const PORT = process.env.PORT || 5000;
