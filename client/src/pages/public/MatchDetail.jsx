@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import socket from '../../socket';
 import PublicNavbar from '../../components/PublicNavbar';
+import ProfessionalCricketScorecard from '../../components/ProfessionalCricketScorecard';
 
 const MatchDetail = ({ isDarkMode, setIsDarkMode }) => {
     const { id } = useParams();
@@ -66,7 +67,7 @@ const MatchDetail = ({ isDarkMode, setIsDarkMode }) => {
 
         switch (match.sport) {
             case 'CRICKET':
-                return <CricketScoreboard match={match} />;
+                return <ProfessionalCricketScorecard match={match} />;
             case 'BADMINTON':
             case 'TABLE_TENNIS':
             case 'VOLLEYBALL':

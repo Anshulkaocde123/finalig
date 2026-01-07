@@ -372,6 +372,21 @@ const LiveConsole = () => {
                                     </div>
                                 </div>
 
+                                {/* Cricket Advanced Scorecard */}
+                                {selectedMatch.sport === 'CRICKET' && (
+                                    <>
+                                        <ProfessionalCricketScorecard match={selectedMatch} />
+                                        <ScoringControls
+                                            match={selectedMatch}
+                                            onUpdate={handleScoreUpdate}
+                                            onTimerAction={handleTimerAction}
+                                            onAddFoul={handleAddFoul}
+                                            onRemoveFoul={handleRemoveFoul}
+                                            onResetMatch={handleResetMatch}
+                                        />
+                                    </>
+                                )}
+
                                 {/* Badminton Enhanced Controls */}
                                 {selectedMatch.sport === 'BADMINTON' && (
                                     <>
@@ -380,8 +395,8 @@ const LiveConsole = () => {
                                     </>
                                 )}
 
-                                {/* Default Scoring Controls for non-badminton sports */}
-                                {selectedMatch.sport !== 'BADMINTON' && (
+                                {/* Default Scoring Controls for other sports */}
+                                {selectedMatch.sport !== 'BADMINTON' && selectedMatch.sport !== 'CRICKET' && (
                                     <ScoringControls
                                         match={selectedMatch}
                                         onUpdate={handleScoreUpdate}
