@@ -10,6 +10,8 @@ import CricketSquadManager from '../../components/CricketSquadManager';
 import FootballScoreboard from '../../components/FootballScoreboard';
 import EnhancedFoulSystem from '../../components/EnhancedFoulSystem';
 import PenaltyShootout from '../../components/PenaltyShootout';
+import BadmintonScoreboard from '../../components/BadmintonScoreboard';
+import BadmintonAdminControls from '../../components/BadmintonAdminControls';
 import { toast } from 'react-hot-toast';
 import { RefreshCw, Play, Square, Trash2, X, Radio, Users } from 'lucide-react';
 
@@ -375,15 +377,25 @@ const LiveConsole = () => {
                                     </div>
                                 </div>
 
-                                {/* Scoring Controls */}
-                                <ScoringControls
-                                    match={selectedMatch}
-                                    onUpdate={handleScoreUpdate}
-                                    onTimerAction={handleTimerAction}
-                                    onAddFoul={handleAddFoul}
-                                    onRemoveFoul={handleRemoveFoul}
-                                    onSetToss={handleSetToss}
-                                />
+                                {/* Badminton Enhanced Controls */}
+                                {selectedMatch.sport === 'BADMINTON' && (
+                                    <>
+                                        <BadmintonScoreboard match={selectedMatch} isDarkMode={true} />
+                                        <BadmintonAdminControls match={selectedMatch} onUpdate={handleScoreUpdate} />
+                                    </>
+                                )}
+
+                                {/* Default Scoring Controls for non-badminton sports */}
+                                {selectedMatch.sport !== 'BADMINTON' && (
+                                    <ScoringControls
+                                        match={selectedMatch}
+                                        onUpdate={handleScoreUpdate}
+                                        onTimerAction={handleTimerAction}
+                                        onAddFoul={handleAddFoul}
+                                        onRemoveFoul={handleRemoveFoul}
+                                        onSetToss={handleSetToss}
+                                    />
+                                )}
                                 
                                 {/* Enhanced Foul System for Football/Hockey */}
                                 {['FOOTBALL', 'HOCKEY'].includes(selectedMatch.sport) && (

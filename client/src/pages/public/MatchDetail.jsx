@@ -5,6 +5,7 @@ import api from '../../api/axios';
 import socket from '../../socket';
 import PublicNavbar from '../../components/PublicNavbar';
 import ProfessionalCricketScorecard from '../../components/ProfessionalCricketScorecard';
+import BadmintonScoreboard from '../../components/BadmintonScoreboard';
 import { ArrowLeft, Calendar, MapPin, Trophy, Circle, Clock } from 'lucide-react';
 
 // Lazy load 3D background
@@ -133,7 +134,8 @@ const MatchDetail = ({ isDarkMode, setIsDarkMode }) => {
         const props = { match, isDarkMode, fouls };
         switch (match.sport) {
             case 'CRICKET': return <ProfessionalCricketScorecard match={match} isDarkMode={isDarkMode} />;
-            case 'BADMINTON': case 'TABLE_TENNIS': case 'VOLLEYBALL': return <SetScoreboard {...props} />;
+            case 'BADMINTON': return <BadmintonScoreboard {...props} />;
+            case 'TABLE_TENNIS': case 'VOLLEYBALL': return <SetScoreboard {...props} />;
             case 'FOOTBALL': case 'HOCKEY': return <FootballScoreboard {...props} />;
             case 'BASKETBALL': return <BasketballScoreboard {...props} />;
             case 'CHESS': return <ChessScoreboard {...props} />;
