@@ -336,16 +336,15 @@ const LiveConsole = () => {
             />
 
             {/* Scoring Modal */}
-            
-                {selectedMatch && (
+            {selectedMatch && (
+                <div 
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto"
+                    onClick={() => setSelectedMatch(null)}
+                >
                     <div 
-                        } className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto"
-                        onClick={() => setSelectedMatch(null)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/10 my-auto"
                     >
-                        <div 
-                            } onClick={(e) => e.stopPropagation()}
-                            className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/10 my-auto"
-                        >
                             <div className="sticky top-0 bg-slate-900/95 backdrop-blur-xl p-4 sm:p-6 border-b border-white/10 flex justify-between items-start sm:items-center gap-3 z-10">
                                 <div className="flex-1 min-w-0">
                                     <h3 className="text-lg sm:text-xl font-black text-white">Score Management</h3>

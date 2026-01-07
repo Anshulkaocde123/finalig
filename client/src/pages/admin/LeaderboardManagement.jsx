@@ -135,8 +135,7 @@ const LeaderboardManagement = () => {
                                     <div className="flex items-center justify-between gap-4 flex-wrap">
                                         {/* Rank and Name */}
                                         <div className="flex items-center gap-4 flex-1 min-w-[200px]">
-                                            <div }
-                                                className={`bg-gradient-to-br ${getRankColor(idx + 1)} rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-white shadow-lg`}>
+                                            <div className={`bg-gradient-to-br ${getRankColor(idx + 1)} rounded-full w-14 h-14 flex items-center justify-center font-black text-xl text-white shadow-lg`}>
                                                 {getRankBadge(idx + 1)}
                                             </div>
                                             <div>

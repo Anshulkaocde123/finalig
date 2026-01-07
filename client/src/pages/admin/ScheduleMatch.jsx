@@ -105,7 +105,7 @@ const ScheduleMatch = () => {
                         {/* VS Display */}
                         <div className="relative py-6">
                             <div className="flex items-center justify-center gap-4">
-                                <div className="flex-1 text-center p-4 rounded-xl bg-blue-500/10 border border-blue-500/30" }>
+                                <div className="flex-1 text-center p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
                                     <div className="text-3xl font-black text-blue-400">{teamADept?.shortCode || '???'}</div>
                                     <div className="text-sm text-gray-400 mt-1">{teamADept?.name || 'Select Team A'}</div>
                                 </div>
@@ -114,7 +114,7 @@ const ScheduleMatch = () => {
                                         <span className="text-white font-black text-lg">VS</span>
                                     </div>
                                 </div>
-                                <div className="flex-1 text-center p-4 rounded-xl bg-pink-500/10 border border-pink-500/30" }>
+                                <div className="flex-1 text-center p-4 rounded-xl bg-pink-500/10 border border-pink-500/30">
                                     <div className="text-3xl font-black text-pink-400">{teamBDept?.shortCode || '???'}</div>
                                     <div className="text-sm text-gray-400 mt-1">{teamBDept?.name || 'Select Team B'}</div>
                                 </div>
