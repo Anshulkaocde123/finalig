@@ -87,28 +87,28 @@ const AdminManagement = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <div } }>
+                    <div>
                         <h1 className="text-3xl md:text-4xl font-black text-white flex items-center gap-3">
                             <Shield className="w-8 h-8 text-indigo-400" />
                             Admin Management
                         </h1>
                         <p className="text-gray-400 mt-1">Manage admin users and permissions</p>
                     </div>
-                    <button } } onClick={() => setShowCreateModal(true)}
+                    <button onClick={() => setShowCreateModal(true)}
                         className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg">
                         <Plus className="w-5 h-5" /> Add Admin
                     </button>
                 </div>
 
                 {/* Live Activity */}
-                <div } } className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
+                <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                         <Activity className="w-5 h-5 text-green-400" /> Live Activity
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {liveActivity.length > 0 ? liveActivity.map((activity, idx) => (
-                            <div key={idx} } } className="bg-white/5 border border-white/10 rounded-xl p-4">
+                            <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-4">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center"><span className="text-indigo-400">👤</span></div>
                                     <div>
@@ -129,7 +129,7 @@ const AdminManagement = () => {
                 {loading ? (
                     <div className="text-center py-12"><div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
                 ) : (
-                    <div } } className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-white/5 border-b border-white/10">
@@ -141,8 +141,8 @@ const AdminManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {admins.map((admin, idx) => (
-                                        <motion.tr key={admin._id} } } } className="hover:bg-white/5">
+                                    {admins.map((admin) => (
+                                        <tr key={admin._id} className="hover:bg-white/5">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-10 h-10 rounded-full bg-gradient-to-r from-${getRoleColor(admin.role)}-500 to-${getRoleColor(admin.role)}-600 flex items-center justify-center text-white font-bold`}>
@@ -172,20 +172,20 @@ const AdminManagement = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-2">
                                                     {!admin.isTrusted && !admin.isSuspended && (
-                                                        <button } } onClick={() => handleVerifyAdmin(admin._id)}
+                                                        <button onClick={() => handleVerifyAdmin(admin._id)}
                                                             className="p-2 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded-lg" title="Verify">
                                                             <UserCheck className="w-4 h-4" />
                                                         </button>
                                                     )}
                                                     {!admin.isSuspended && (
-                                                        <button } } onClick={() => handleSuspendAdmin(admin._id)}
+                                                        <button onClick={() => handleSuspendAdmin(admin._id)}
                                                             className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg" title="Suspend">
                                                             <UserX className="w-4 h-4" />
                                                         </button>
                                                     )}
                                                 </div>
                                             </td>
-                                        </motion.tr>
+                                        </tr>
                                     ))}
                                 </tbody>
                             </table>
@@ -200,11 +200,9 @@ const AdminManagement = () => {
                 )}
 
                 {/* Create Modal */}
-                
-                    {showCreateModal && (
-                        <div } } } className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                            <div } } }
-                                className="bg-slate-800 border border-white/10 rounded-2xl p-6 w-full max-w-md">
+                {showCreateModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-slate-800 border border-white/10 rounded-2xl p-6 w-full max-w-md">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="text-xl font-bold text-white">Add New Admin</h3>
                                     <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
@@ -232,7 +230,7 @@ const AdminManagement = () => {
                                             {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                                         </select>
                                     </div>
-                                    <button } } type="submit"
+                                    <button type="submit"
                                         className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-bold flex items-center justify-center gap-2">
                                         <Save className="w-5 h-5" /> Create Admin
                                     </button>
