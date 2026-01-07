@@ -250,9 +250,9 @@ const CricketScoreboard = ({ match, isDarkMode }) => {
 };
 
 const SetScoreboard = ({ match, isDarkMode }) => {
-    const { scoreA, scoreB, currentSet, setDetails = [], maxSets } = match;
+    const { scoreA, scoreB, currentSet, setDetails = [], maxSets, sport } = match;
     const setsToWin = Math.ceil((maxSets || 3) / 2);
-    const emoji = sport === 'TABLE_TENNIS' ? '🏓' : sport === 'VOLLEYBALL' ? '��' : '🏸';
+    const emoji = sport === 'TABLE_TENNIS' ? '🏓' : sport === 'VOLLEYBALL' ? '🏐' : '🏸';
     return (
         <div className={`backdrop-blur-xl rounded-3xl border overflow-hidden ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-gray-200'}`}>
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-4 flex justify-between items-center">
