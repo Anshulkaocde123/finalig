@@ -256,10 +256,11 @@ if (process.env.NODE_ENV === 'production') {
     console.log('📁 Index path:', indexPath);
     console.log('📄 Index exists:', fs.existsSync(indexPath));
     
-    app.get('*', (req, res) => {
-        // Don't interfere with API routes
+    // Express 5 compatible catch-all - use app.use() instead of app.get('*')
+    app.use((req, res, next) => {
+        // Don't interfere with API routes or uploads
         if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
-            return res.status(404).json({ error: 'Not found' });
+            return next();
         }
         
         console.log('🔄 SPA fallback for:', req.path);
