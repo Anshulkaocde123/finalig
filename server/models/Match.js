@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Sport types enum
-const SPORTS = ['CRICKET', 'BADMINTON', 'TABLE_TENNIS', 'VOLLEYBALL', 'FOOTBALL', 'BASKETBALL', 'KHOKHO', 'KABADDI', 'CHESS'];
+const SPORTS = ['CRICKET', 'BADMINTON', 'TABLE_TENNIS', 'VOLLEYBALL', 'FOOTBALL', 'HOCKEY', 'BASKETBALL', 'KHOKHO', 'KABADDI', 'CHESS'];
 
 // Match status enum
 const MATCH_STATUS = ['SCHEDULED', 'LIVE', 'COMPLETED', 'PAUSED', 'CANCELLED'];

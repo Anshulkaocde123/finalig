@@ -6,7 +6,8 @@ import { Calendar, Settings, AlertCircle, Sparkles, MapPin, Clock } from 'lucide
 const SPORTS = [
     { label: '🏏 Cricket', value: 'CRICKET', config: { overs: 20 }, color: 'from-green-500 to-emerald-600' },
     { label: '⚽ Football', value: 'FOOTBALL', config: { periods: 2 }, color: 'from-blue-500 to-cyan-600' },
-    { label: '🏀 Basketball', value: 'BASKETBALL', config: { periods: 4 }, color: 'from-orange-500 to-red-600' },
+    { label: '� Hockey', value: 'HOCKEY', config: { periods: 2 }, color: 'from-cyan-500 to-blue-600' },
+    { label: '�🏀 Basketball', value: 'BASKETBALL', config: { periods: 4 }, color: 'from-orange-500 to-red-600' },
     { label: '🏸 Badminton', value: 'BADMINTON', config: { sets: 3 }, color: 'from-purple-500 to-pink-600' },
     { label: '🏓 Table Tennis', value: 'TABLE_TENNIS', config: { sets: 3 }, color: 'from-yellow-500 to-orange-600' },
     { label: '🏐 Volleyball', value: 'VOLLEYBALL', config: { sets: 3 }, color: 'from-indigo-500 to-purple-600' },
@@ -59,7 +60,7 @@ const ScheduleMatch = () => {
             const payload = { teamA: formData.teamA, teamB: formData.teamB, sport: formData.sport, scheduledAt: formData.scheduledAt, venue: formData.venue || 'Main Ground' };
             if (formData.sport === 'CRICKET') payload.totalOvers = formData.config.overs || 20;
             else if (['BADMINTON', 'TABLE_TENNIS', 'VOLLEYBALL'].includes(formData.sport)) payload.maxSets = formData.config.sets || 3;
-            else if (['FOOTBALL', 'BASKETBALL', 'KHOKHO', 'KABADDI'].includes(formData.sport)) payload.maxPeriods = formData.config.periods || 2;
+            else if (['FOOTBALL', 'HOCKEY', 'BASKETBALL', 'KHOKHO', 'KABADDI'].includes(formData.sport)) payload.maxPeriods = formData.config.periods || 2;
             await api.post(`/matches/${formData.sport.toLowerCase()}/create`, payload);
             toast.success('Match scheduled successfully!');
             setFormData({ sport: 'CRICKET', teamA: '', teamB: '', scheduledAt: '', venue: '', config: { overs: 20 } });

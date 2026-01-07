@@ -19,6 +19,7 @@ const SPORT_CONTROLLER_MAP = {
     'table_tennis': { controller: setController, type: 'set' },
     'volleyball': { controller: setController, type: 'set' },
     'football': { controller: scoreController, type: 'goal' },
+    'hockey': { controller: scoreController, type: 'goal' },
     'basketball': { controller: scoreController, type: 'goal' },
     'khokho': { controller: scoreController, type: 'goal' },
     'kabaddi': { controller: scoreController, type: 'goal' },
