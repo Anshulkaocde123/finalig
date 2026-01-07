@@ -206,11 +206,9 @@ const LiveConsole = () => {
                 </div>
             ) : (
                 <div className="grid gap-4">
-                    {matches.map((match, idx) => (
+                    {matches.map((match) => (
                         <div
                             key={match._id}
-
-                            }
                             className={`backdrop-blur-xl rounded-xl sm:rounded-2xl border p-3 sm:p-4 md:p-5 transition-all ${
                                 match.status === 'LIVE' 
                                     ? 'bg-red-500/10 border-red-500/30 ring-2 ring-red-500/20' 
