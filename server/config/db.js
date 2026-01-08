@@ -3,13 +3,14 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
     try {
         if (!process.env.MONGODB_URI) {
-            throw new Error('MONGODB_URI environment variable is not set');
+            console.warn('⚠️  MONGODB_URI not set - skipping database connection');
+            return null;
         }
         console.log('🔄 Attempting MongoDB connection...');
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 10000,
+            serverSelectionTimeoutMS: 5000,  // Reduced from 10s
             socketTimeoutMS: 45000,
-            connectTimeoutMS: 10000,
+            connectTimeoutMS: 5000,  // Reduced from 10s
             retryWrites: true,
             w: 'majority',
             maxPoolSize: 10,
@@ -19,9 +20,7 @@ const connectDB = async () => {
         return conn;
     } catch (error) {
         console.error(`❌ MongoDB Connection Error: ${error.message}`);
-        console.error('Stack:', error.stack);
-        console.error('Make sure MONGODB_URI is set in environment variables');
-        console.warn('⚠️  App starting without MongoDB - some features may not work');
+        console.warn('⚠️  App running without MongoDB - some features may not work');
         return null;
     }
 };

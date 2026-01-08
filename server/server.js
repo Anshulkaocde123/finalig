@@ -32,14 +32,11 @@ const foulRoutes = require('./routes/foulRoutes');
 console.log('🔄 Starting VNIT IG App Server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
-// Connect to MongoDB
-console.log('🔄 Connecting to MongoDB...');
-connectDB().then(() => {
-    console.log('✅ MongoDB connection completed');
-}).catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    // Continue anyway - app can work without DB for now
-});
+// Connect to MongoDB asynchronously - don't block server startup
+console.log('🔄 Initiating MongoDB connection in background...');
+connectDB()
+    .then(() => console.log('✅ MongoDB connection completed'))
+    .catch((err) => console.error('❌ MongoDB connection error:', err.message));
 
 const app = express();
 
