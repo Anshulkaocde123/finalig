@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
 
 const Login = () => {
@@ -71,11 +71,20 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+            const res = await api.post('/auth/login', formData);
 
             if (res.data.token) {
                 localStorage.setItem('adminToken', res.data.token);
                 localStorage.setItem('adminUser', JSON.stringify(res.data));
+                
+                // Check role and redirect accordingly
+                if (res.data.role === 'viewer') {
+                    toast.error('Access denied. You need admin privileges.');
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminUser');
+                    return;
+                }
+                
                 toast.success(`Welcome back, ${res.data.username || res.data.name}!`);
                 navigate('/admin/dashboard');
             }
@@ -102,7 +111,7 @@ const Login = () => {
             const googleData = JSON.parse(jsonPayload);
 
             // Send to backend
-            const res = await axios.post('http://localhost:5000/api/auth/register-oauth', {
+            const res = await api.post('/auth/register-oauth', {
                 googleId: googleData.sub,
                 email: googleData.email,
                 name: googleData.name,
@@ -110,6 +119,12 @@ const Login = () => {
             });
 
             if (res.data.token) {
+                // Check if user has admin privileges
+                if (res.data.role === 'viewer' && !res.data.isTrusted) {
+                    toast.error('Access pending. Your Google account needs admin approval. Please contact an administrator.');
+                    return;
+                }
+                
                 localStorage.setItem('adminToken', res.data.token);
                 localStorage.setItem('adminUser', JSON.stringify(res.data));
                 toast.success(`Welcome, ${res.data.name}!`);

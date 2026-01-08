@@ -1,11 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Building2, Calendar, Radio, Star, Trophy, Target, Settings, Users, GraduationCap, BookOpen, LogOut, Menu, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const AdminLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+
+    // Check authentication and role
+    useEffect(() => {
+        const checkAuth = () => {
+            const token = localStorage.getItem('adminToken');
+            const userStr = localStorage.getItem('adminUser');
+            
+            if (!token) {
+                navigate('/auth/login');
+                return;
+            }
+            
+            // Check role
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.role === 'viewer' && !user.isTrusted) {
+                        toast.error('Access denied. Only admins can access this area.');
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('adminUser');
+                        navigate('/auth/login');
+                        return;
+                    }
+                    setCurrentUser(user);
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                    navigate('/auth/login');
+                }
+            }
+        };
+        
+        checkAuth();
+    }, [navigate]);
 
     const navItems = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
