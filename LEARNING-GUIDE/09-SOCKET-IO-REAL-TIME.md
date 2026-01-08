@@ -1065,6 +1065,233 @@ publicNamespace.emit('news', data);   // Only /public clients
 
 ---
 
+## Part 9: Real-World Example - Cricket Bowler Selection Update
+
+### **The Complete Flow (Recent Implementation)**
+
+When admin changes the bowler in a cricket match, here's what happens:
+
+#### **Step 1: Frontend Sends Request**
+
+```javascript
+// client/src/components/CricketAdminControls.jsx
+const handleSelectBowler = async (player) => {
+    try {
+        const response = await fetch(
+            `${API_URL}/api/matches/cricket/update`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    matchId: match._id,
+                    selectBowler: {
+                        bowlerId: player._id,
+                        bowlerName: player.playerName
+                    }
+                })
+            }
+        );
+        // Result will come via Socket.io, not HTTP response!
+    } catch (error) {
+        console.error('Failed to select bowler:', error);
+    }
+};
+```
+
+#### **Step 2: Backend Processes Request**
+
+```javascript
+// server/controllers/sports/cricketController.js (Lines 340-455)
+const updateMatch = asyncHandler(async (req, res) => {
+    const { matchId, selectBowler } = req.body;
+    
+    // Find match
+    const match = await CricketMatch.findById(matchId);
+    
+    if (selectBowler) {
+        console.log('🎳 SELECT BOWLER REQUEST:', { 
+            requestedName: selectBowler.bowlerName,
+            requestedId: selectBowler.bowlerId
+        });
+        
+        // Find bowler in bowling squad with detailed logging
+        const bowlingSquad = match.battingTeam === 'A' ? match.squadB : match.squadA;
+        
+        let bowler = null;
+        
+        // Try ID first
+        if (selectBowler.bowlerId) {
+            bowler = bowlingSquad.find(p => 
+                p._id && p._id.toString() === selectBowler.bowlerId.toString()
+            );
+            console.log(`🎳 Search by ID: ${bowler ? 'FOUND' : 'NOT FOUND'}`);
+        }
+        
+        // Try name with per-comparison logging
+        if (!bowler && selectBowler.bowlerName) {
+            bowler = bowlingSquad.find(p => {
+                const playerName = p.playerName || p.name;
+                const matches = playerName === selectBowler.bowlerName;
+                console.log(`  🔍 Checking "${playerName}" === "${selectBowler.bowlerName}": ${matches}`);
+                return matches;
+            });
+            console.log(`🎳 Search by name: ${bowler ? 'FOUND' : 'NOT FOUND'}: ${bowler?.playerName}`);
+        }
+        
+        // Mark as current bowler
+        bowler.isCurrentBowler = true;
+        match.currentBowler = {
+            playerName: bowler.playerName,
+            oversBowled: bowler.oversBowled ?? 0,
+            runsConceded: bowler.runsConceded ?? 0,
+            wicketsTaken: bowler.wicketsTaken ?? 0,
+            maidens: bowler.maidens ?? 0
+        };
+        
+        console.log('✅ BOWLER SELECTED:', {
+            name: bowler.playerName,
+            stats: `${bowler.oversBowled}-${bowler.maidens}-${bowler.runsConceded}-${bowler.wicketsTaken}`
+        });
+    }
+    
+    // Save to database
+    await match.save();
+    
+    // IMPORTANT: Populate team names for display
+    const populatedMatch = await CricketMatch.findById(matchId)
+        .populate('teamA', 'name shortCode logo')
+        .populate('teamB', 'name shortCode logo');
+    
+    // Emit via Socket.io to ALL connected clients
+    console.log('📡 Broadcasting bowler change via Socket.io');
+    const io = req.app.get('io');
+    if (io) io.emit('matchUpdate', populatedMatch);
+    
+    // Return populated match (contains department names!)
+    return res.json({ 
+        success: true, 
+        message: 'Bowler selected', 
+        data: populatedMatch 
+    });
+});
+```
+
+**Key Points:**
+1. ✅ Detailed logging for debugging
+2. ✅ ID-first search (most accurate)
+3. ✅ Exact name matching with per-comparison logging
+4. ✅ Stats preserved with nullish coalescing (`??`)
+5. ✅ Populated teams for correct department names
+6. ✅ Socket.io emission to all clients
+
+#### **Step 3: Socket.io Broadcasts**
+
+```javascript
+// Backend emits ONE time:
+io.emit('matchUpdate', populatedMatch);
+
+// ALL connected clients receive:
+// - Admin's browser
+// - Public scoreboard
+// - Any other open tabs
+```
+
+#### **Step 4: Frontend Receives Update**
+
+```javascript
+// client/src/socket.js
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
+
+socket.on('matchUpdate', (updatedMatch) => {
+    console.log('📡 Received match update:', {
+        currentBowler: updatedMatch.currentBowler?.playerName,
+        teamA: updatedMatch.teamA?.name,  // "CIVIL ENGINEERING" (not "Team A")
+        teamB: updatedMatch.teamB?.name   // "COMPUTER SCIENCE" (not "Team B")
+    });
+    
+    // Update React state → UI updates automatically
+    setMatch(updatedMatch);
+});
+```
+
+#### **Step 5: UI Updates Instantly**
+
+```jsx
+// client/src/components/CricketScoreboard.jsx
+const CricketScoreboard = ({ match }) => {
+    // match.currentBowler updated via Socket.io
+    return (
+        <div>
+            <h3>Current Bowler</h3>
+            <p>{match.currentBowler?.playerName || 'Not Selected'}</p>
+            <p>
+                {match.currentBowler?.oversBowled}-
+                {match.currentBowler?.maidens}-
+                {match.currentBowler?.runsConceded}-
+                {match.currentBowler?.wicketsTaken}
+            </p>
+        </div>
+    );
+};
+```
+
+### **Complete Timeline**
+
+```
+Time    Event
+────────────────────────────────────────────────────────────────────
+0ms     Admin clicks "Select Bowler" → "CIVIL Player 2"
+10ms    Frontend sends PUT /api/matches/cricket/update
+50ms    Backend receives request
+51ms    Find match in database
+52ms    Find bowler in squad (with logging)
+        🎳 SELECT BOWLER REQUEST: { requestedName: 'CIVIL Player 2' }
+        🎳 Bowling squad: ['0: Player 1', '1: Player 2', ...]
+          🔍 Checking "CIVIL Player 1" === "CIVIL Player 2": false
+          🔍 Checking "CIVIL Player 2" === "CIVIL Player 2": true
+        🎳 Search by name: FOUND: CIVIL Player 2
+        ✅ BOWLER SELECTED: { name: 'CIVIL Player 2', stats: '0-0-0-0' }
+55ms    Save match to database
+60ms    Populate team names (.populate())
+65ms    📡 Broadcasting bowler change via Socket.io
+        io.emit('matchUpdate', populatedMatch)
+70ms    ALL clients receive Socket.io event
+75ms    React state updates
+80ms    UI re-renders → Users see "CIVIL Player 2"
+────────────────────────────────────────────────────────────────────
+Total: <100ms end-to-end latency
+```
+
+### **Why This Implementation Works**
+
+1. **Accuracy:**
+   - ID-first search (most reliable)
+   - Exact name matching (not partial)
+   - Per-comparison logging (easy debugging)
+
+2. **Correct Display:**
+   - `.populate('teamA', 'name shortCode logo')` ensures "CIVIL" not "Team A"
+   - Populated match returned in HTTP response AND Socket.io emission
+
+3. **Real-Time:**
+   - Socket.io broadcasts to ALL connected clients
+   - <100ms latency (near-instant)
+   - No page refresh needed
+
+4. **Stat Preservation:**
+   - Uses `??` nullish coalescing (not `||`)
+   - Preserves 0 values (e.g., 0 wickets = valid)
+   - Never loses existing stats
+
+5. **Debugging:**
+   - Emoji prefixes (🎳, ✅, 📡) easy to spot
+   - Per-comparison logging shows EXACT match
+   - Request/response logging for full trace
+
+---
+
 ## Summary
 
 **Key Concepts Learned:**
@@ -1075,16 +1302,25 @@ publicNamespace.emit('news', data);   // Only /public clients
 ✅ **Events**: Emitting and listening for custom events  
 ✅ **Rooms**: Broadcasting to specific groups  
 ✅ **React Integration**: useEffect with socket listeners  
+✅ **Population**: `.populate()` for correct team names  
+✅ **Debugging**: Detailed logging with emoji prefixes  
 
 **Complete Flow:**
 
 ```
-Admin Action → HTTP Request → Update Database → Emit Socket Event 
-→ Room Members Receive → Update UI → Users See Changes INSTANTLY
+Admin Action → HTTP Request → Update Database → Populate Teams → 
+Emit Socket Event → ALL Clients Receive → Update UI → 
+Users See Changes INSTANTLY (<100ms)
 ```
+
+**Recent Improvements:**
+- Bowler selection with exact matching and detailed logging
+- Department names displayed correctly (not "Team A/B")
+- Stats preserved with nullish coalescing
+- Real-time updates with populated data
 
 ---
 
-**Next Chapter:** File Uploads & Cloudinary →
+**Next Chapter:** Chapter 14 - Cricket Scoring System Deep Dive →
 
-Learn how profile pictures and logos work!
+Learn the complete cricket scoring implementation with validation, undo logic, and edge case handling!

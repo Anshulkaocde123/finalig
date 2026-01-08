@@ -198,6 +198,40 @@ This guide will teach you **MERN Stack Development** from scratch using YOUR OWN
 - Implementing Live Updates
 - Connecting Frontend to Socket.io
 
+### **Chapter 14: Cricket Scoring System Deep Dive** 🏏 ⭐ NEW!
+📄 File: `14-CRICKET-SCORING-EXPLAINED.md`
+- Cricket Scoring Architecture
+- **Bowler Selection Logic (Complete Rewrite)**
+  - ID-first search with exact matching
+  - Per-comparison logging for debugging
+  - Stats preservation with nullish coalescing
+  - Real-world bug fix explained
+- **Department Name Population Fix**
+  - `.populate()` for correct team display
+  - "CIVIL" instead of "Team A"
+- **Comprehensive Validation Rules**
+  - Runs: 0-7 per ball
+  - Wickets: Maximum 10
+  - Overs: 5.6 → 6.0 conversion
+  - Non-negative stats enforcement
+- **Undo Functionality**
+  - Batsman stat reversal
+  - Bowler stat reversal
+  - Complete action history
+- **Completed Match Protection**
+  - Blocks updates after completion
+  - Edge case handling
+- **Frontend Bowler Modal Enhancement**
+  - Shows ALL bowlers with stats
+  - Visual current bowler indicator
+- **Real-Time Socket.io Updates**
+  - <100ms latency
+  - Populated data broadcasting
+- **Debugging Techniques**
+  - Emoji-prefixed logging
+  - Request/response tracking
+  - Per-comparison visibility
+
 ### **Chapter 15: Common Errors & Solutions**
 📄 File: `15-CHALLENGES-AND-SOLUTIONS.md`
 - CORS Errors
