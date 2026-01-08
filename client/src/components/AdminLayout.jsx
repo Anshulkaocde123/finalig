@@ -10,13 +10,15 @@ const AdminLayout = () => {
     const [currentUser, setCurrentUser] = useState(null);
 
     // Check authentication and role
-    useEffect(() => {
-        const checkAuth = () => {
+    useEffect(() => {        const checkAuth = () => {
             const token = localStorage.getItem('adminToken');
             const userStr = localStorage.getItem('adminUser');
             
+            console.log('🔐 AdminLayout Auth Check:', { hasToken: !!token, hasUser: !!userStr });
+            
             if (!token) {
-                navigate('/auth/login');
+                console.log('❌ No token found, redirecting to login');
+                navigate('/auth/login', { replace: true });
                 return;
             }
             
@@ -24,17 +26,25 @@ const AdminLayout = () => {
             if (userStr) {
                 try {
                     const user = JSON.parse(userStr);
+                    console.log('👤 User role:', user.role, 'isTrusted:', user.isTrusted);
+                    
+                    // Allow super_admin, admin, and trusted users
                     if (user.role === 'viewer' && !user.isTrusted) {
+                        console.log('🚫 Access denied for untrusted viewer');
                         toast.error('Access denied. Only admins can access this area.');
                         localStorage.removeItem('adminToken');
                         localStorage.removeItem('adminUser');
-                        navigate('/auth/login');
+                        navigate('/auth/login', { replace: true });
                         return;
                     }
+                    
+                    console.log('✅ Auth check passed');
                     setCurrentUser(user);
                 } catch (e) {
-                    console.error('Error parsing user data:', e);
-                    navigate('/auth/login');
+                    console.error('❌ Error parsing user data:', e);
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminUser');
+                    navigate('/auth/login', { replace: true });
                 }
             }
         };
@@ -58,8 +68,11 @@ const AdminLayout = () => {
 
     const handleLogout = () => {
         if (window.confirm('Are you sure you want to logout?')) {
+            console.log('👋 Logging out...');
             localStorage.removeItem('adminToken');
-            navigate('/login');
+            localStorage.removeItem('adminUser');
+            navigate('/auth/login', { replace: true });
+            toast.success('Logged out successfully');
         }
     };
 

@@ -74,19 +74,21 @@ const Login = () => {
             const res = await api.post('/auth/login', formData);
 
             if (res.data.token) {
+                console.log('✅ Login successful:', { role: res.data.role, username: res.data.username });
                 localStorage.setItem('adminToken', res.data.token);
                 localStorage.setItem('adminUser', JSON.stringify(res.data));
                 
                 // Check role and redirect accordingly
-                if (res.data.role === 'viewer') {
-                    toast.error('Access denied. You need admin privileges.');
+                if (res.data.role === 'viewer' && !res.data.isTrusted) {
+                    console.log('🚫 Viewer account without admin access');
+                    toast.error('Access denied. You need admin privileges. Please contact an administrator.');
                     localStorage.removeItem('adminToken');
                     localStorage.removeItem('adminUser');
                     return;
                 }
                 
                 toast.success(`Welcome back, ${res.data.username || res.data.name}!`);
-                navigate('/admin/dashboard');
+                navigate('/admin/dashboard', { replace: true });
             }
         } catch (error) {
             console.error(error);
@@ -119,8 +121,11 @@ const Login = () => {
             });
 
             if (res.data.token) {
+                console.log('✅ Google OAuth successful:', { role: res.data.role, isTrusted: res.data.isTrusted });
+                
                 // Check if user has admin privileges
                 if (res.data.role === 'viewer' && !res.data.isTrusted) {
+                    console.log('🚫 Google OAuth: Viewer account needs approval');
                     toast.error('Access pending. Your Google account needs admin approval. Please contact an administrator.');
                     return;
                 }
@@ -128,7 +133,7 @@ const Login = () => {
                 localStorage.setItem('adminToken', res.data.token);
                 localStorage.setItem('adminUser', JSON.stringify(res.data));
                 toast.success(`Welcome, ${res.data.name}!`);
-                navigate('/admin/dashboard');
+                navigate('/admin/dashboard', { replace: true });
             }
         } catch (error) {
             console.error(error);

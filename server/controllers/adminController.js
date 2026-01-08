@@ -155,13 +155,22 @@ const updateAdmin = asyncHandler(async (req, res) => {
     
     // Only super_admin can change these
     if (currentAdmin.role === 'super_admin') {
-        if (role) admin.role = role;
+        if (role) {
+            console.log(`🔄 Super Admin ${currentAdmin.username} changing role:`, {
+                admin: admin.name || admin.username,
+                from: admin.role,
+                to: role,
+                provider: admin.provider
+            });
+            admin.role = role;
+        }
         if (isActive !== undefined) admin.isActive = isActive;
         if (isTrusted !== undefined) {
             admin.isTrusted = isTrusted;
             if (isTrusted) {
                 admin.trustedSince = new Date();
                 admin.trustedBy = currentAdmin._id;
+                console.log(`✅ Admin ${admin.name || admin.username} granted trust by ${currentAdmin.username}`);
             }
         }
     }
@@ -171,6 +180,13 @@ const updateAdmin = asyncHandler(async (req, res) => {
     const updatedAdmin = await Admin.findById(admin._id)
         .populate('department', 'name shortCode')
         .select('-password');
+    
+    console.log(`👤 Admin updated:`, {
+        name: updatedAdmin.name,
+        role: updatedAdmin.role,
+        isTrusted: updatedAdmin.isTrusted,
+        provider: updatedAdmin.provider
+    });
     
     res.json({
         success: true,
@@ -193,6 +209,13 @@ const verifyAdmin = asyncHandler(async (req, res) => {
         throw new Error('Admin not found');
     }
     
+    console.log(`✅ Super Admin ${req.admin.username} verifying ${admin.name || admin.username}:`, { 
+        provider: admin.provider,
+        currentRole: admin.role, 
+        wasTrusted: admin.isTrusted,
+        nowTrusted: isTrusted 
+    });
+    
     if (verified !== undefined) {
         admin.verified = verified;
         admin.verifiedAt = verified ? new Date() : null;
@@ -206,6 +229,13 @@ const verifyAdmin = asyncHandler(async (req, res) => {
     }
     
     await admin.save();
+    
+    console.log(`👤 Admin ${admin.name || admin.username} is now:`, {
+        verified: admin.verified,
+        isTrusted: admin.isTrusted,
+        role: admin.role,
+        canAccessAdmin: admin.isTrusted || admin.role !== 'viewer'
+    });
     
     // Emit real-time update
     const io = req.app.get('io');

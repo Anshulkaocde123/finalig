@@ -40,7 +40,10 @@ function App() {
         <Route path="/match/:id" element={<MatchDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/student-council" element={<StudentCouncil />} />
-        <Route path="/login" element={<Login />} />
+        
+        {/* Auth Routes */}
+        <Route path="/auth/login" element={<Login />} />
+        <Route path="/login" element={<Login />} /> {/* Legacy redirect */}
 
         {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute />}>

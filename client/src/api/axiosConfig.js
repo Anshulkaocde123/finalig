@@ -31,18 +31,27 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Don't redirect if already on login page or auth routes
+        const isAuthRoute = window.location.pathname.includes('/auth/') || window.location.pathname === '/login';
+        
         if (error.response?.status === 401) {
             // Token expired or invalid
+            console.log('🔒 401 Unauthorized - Clearing session');
             localStorage.removeItem('adminToken');
             localStorage.removeItem('adminUser');
-            window.location.href = '/login';
-            toast.error('Session expired. Please login again.');
+            
+            if (!isAuthRoute) {
+                window.location.href = '/auth/login';
+                toast.error('Session expired. Please login again.');
+            }
         } else if (error.response?.status === 403) {
-            toast.error('You do not have permission to perform this action');
+            console.log('🚫 403 Forbidden:', error.response?.data?.message);
+            toast.error(error.response?.data?.message || 'You do not have permission to perform this action');
         } else if (error.response?.status === 502) {
             toast.error('Server temporarily unavailable. Please try again.');
             console.error('502 Bad Gateway - Server may be restarting or overloaded');
         } else if (error.response?.status === 500) {
+            console.error('500 Server Error:', error.response?.data);
             toast.error('Server error. Please try again later.');
         } else if (error.code === 'ECONNABORTED' || error.message === 'timeout of 30000ms exceeded') {
             toast.error('Request timeout. Please check your connection.');

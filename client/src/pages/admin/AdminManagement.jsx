@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../api/axios';
+import api from '../../api/axiosConfig';
 import { toast } from 'react-hot-toast';
 import { Shield, Plus, Edit, Trash2, UserCheck, UserX, Activity, X, Save } from 'lucide-react';
 
@@ -53,11 +53,19 @@ const AdminManagement = () => {
     };
 
     const handleVerifyAdmin = async (adminId) => {
+        const admin = admins.find(a => a._id === adminId);
+        const displayName = admin?.name || admin?.username || 'Admin';
+        
+        if (!window.confirm(`Verify and trust ${displayName}?\n\nThis will grant them ${admin?.role} access to the system.`)) return;
+        
         try {
-            await api.put(`/admins/${adminId}/verify`);
-            toast.success('Admin verified and trusted');
+            await api.put(`/admins/${adminId}/verify`, { isTrusted: true, verified: true });
+            toast.success(`${displayName} verified and trusted successfully!`);
             fetchAdmins();
-        } catch (err) { toast.error('Failed to verify admin'); }
+        } catch (err) { 
+            console.error('❌ Verify error:', err);
+            toast.error(err.response?.data?.message || 'Failed to verify admin'); 
+        }
     };
 
     const handleSuspendAdmin = async (adminId) => {
@@ -92,7 +100,7 @@ const AdminManagement = () => {
                             <Shield className="w-8 h-8 text-indigo-400" />
                             Admin Management
                         </h1>
-                        <p className="text-gray-700 mt-1">Manage admin users and permissions</p>
+                        <p className="text-gray-300 mt-1">Manage admin users, verify Google OAuth accounts, and control permissions</p>
                     </div>
                     <button onClick={() => setShowCreateModal(true)}
                         className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg">
@@ -145,12 +153,25 @@ const AdminManagement = () => {
                                         <tr key={admin._id} className="hover:bg-white/5">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-r from-${getRoleColor(admin.role)}-500 to-${getRoleColor(admin.role)}-600 flex items-center justify-center text-white font-bold`}>
-                                                        {admin.username?.charAt(0).toUpperCase() || '?'}
-                                                    </div>
+                                                    {admin.profilePicture ? (
+                                                        <img src={admin.profilePicture} alt={admin.username} 
+                                                            className="w-10 h-10 rounded-full border-2 border-white/20" />
+                                                    ) : (
+                                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-r from-${getRoleColor(admin.role)}-500 to-${getRoleColor(admin.role)}-600 flex items-center justify-center text-white font-bold`}>
+                                                            {admin.username?.charAt(0).toUpperCase() || admin.name?.charAt(0).toUpperCase() || '?'}
+                                                        </div>
+                                                    )}
                                                     <div>
-                                                        <div className="text-white font-medium">{admin.username}</div>
-                                                        <div className="text-gray-800 text-xs">{admin.email}</div>
+                                                        <div className="text-white font-medium flex items-center gap-2">
+                                                            {admin.name || admin.username}
+                                                            {admin.provider === 'google' && (
+                                                                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-xs font-semibold">Google</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-gray-400 text-xs">{admin.email}</div>
+                                                        {admin.username && admin.name && admin.username !== admin.name && (
+                                                            <div className="text-gray-500 text-xs">@{admin.username}</div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>

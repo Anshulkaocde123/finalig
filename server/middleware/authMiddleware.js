@@ -14,9 +14,12 @@ const protect = async (req, res, next) => {
         try {
             // Get token from header
             token = req.headers.authorization.split(' ')[1];
+            
+            console.log('🔐 Auth Middleware - Token received:', token?.substring(0, 20) + '...');
 
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+            console.log('✅ Token verified for admin ID:', decoded.id);
 
             // Get admin from the token
             req.admin = await Admin.findById(decoded.id)
@@ -24,11 +27,20 @@ const protect = async (req, res, next) => {
                 .populate('department', 'name shortCode');
 
             if (!req.admin) {
+                console.log('❌ Admin not found for ID:', decoded.id);
                 return res.status(401).json({ message: 'Admin not found' });
             }
+            
+            console.log('👤 Admin authenticated:', { 
+                id: req.admin._id, 
+                username: req.admin.username,
+                role: req.admin.role,
+                isActive: req.admin.isActive
+            });
 
             // Check if admin is active
             if (!req.admin.isActive) {
+                console.log('🚫 Admin account suspended:', req.admin.username);
                 return res.status(403).json({ 
                     message: 'Account suspended',
                     reason: req.admin.suspensionReason 
@@ -42,10 +54,17 @@ const protect = async (req, res, next) => {
 
             next();
         } catch (error) {
-            console.error('Auth error:', error.message);
-            return res.status(401).json({ message: 'Not authorized, invalid token' });
+            console.error('❌ Auth error:', error.message);
+            if (error.name === 'TokenExpiredError') {
+                return res.status(401).json({ message: 'Token expired' });
+            }
+            if (error.name === 'JsonWebTokenError') {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
+            return res.status(401).json({ message: 'Not authorized, token verification failed' });
         }
     } else {
+        console.log('❌ No authorization header found');
         return res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
