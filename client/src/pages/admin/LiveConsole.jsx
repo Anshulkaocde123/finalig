@@ -110,9 +110,27 @@ const LiveConsole = () => {
     const handleTimerAction = async (timerData) => {
         if (!selectedMatch) return;
         try {
-            await api.put(`/matches/${selectedMatch.sport.toLowerCase()}/update`, { matchId: selectedMatch._id, timerAction: timerData.action, timerData });
+            console.log('⏱️ Timer action triggered:', { action: timerData.action, data: timerData });
+            const response = await api.put(`/matches/${selectedMatch.sport.toLowerCase()}/update`, { 
+                matchId: selectedMatch._id, 
+                timerAction: timerData.action, 
+                timerData 
+            });
+            
+            // Update local match state immediately
+            if (response.data?.data) {
+                setMatches(prev => prev.map(m => 
+                    m._id === selectedMatch._id ? response.data.data : m
+                ));
+                setSelectedMatch(response.data.data);
+            }
+            
+            console.log('✅ Timer updated successfully:', response.data);
             toast.success(`Timer ${timerData.action}`);
-        } catch (err) { toast.error('Timer update failed'); }
+        } catch (err) { 
+            console.error('❌ Timer action failed:', err);
+            toast.error('Timer update failed'); 
+        }
     };
 
     const handleAddFoul = async (foulData) => {
@@ -236,7 +254,7 @@ const LiveConsole = () => {
 
                                     <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                                         <span className="text-base sm:text-lg md:text-xl font-black text-white">{match.teamA?.shortCode || match.teamA?.name}</span>
-                                        <span className="text-gray-800 font-bold text-sm sm:text-base">vs</span>
+                                        <span className="text-gray-300 font-bold text-sm sm:text-base uppercase">VS</span>
                                         <span className="text-base sm:text-lg md:text-xl font-black text-white">{match.teamB?.shortCode || match.teamB?.name}</span>
                                     </div>
 
@@ -246,7 +264,7 @@ const LiveConsole = () => {
                                         </div>
                                     )}
 
-                                    <div className="text-sm font-semibold sm:text-sm text-gray-800 mt-2">
+                                    <div className="text-sm font-semibold sm:text-base text-gray-300 mt-2">
                                         {new Date(match.scheduledAt).toLocaleString()}
                                     </div>
                                 </div>

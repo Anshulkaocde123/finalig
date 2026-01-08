@@ -11,8 +11,16 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
     const [elapsedTime, setElapsedTime] = useState(0);
     const timerRef = useRef(null);
 
-    // Timer logic
+    // Timer logic with enhanced logging
     useEffect(() => {
+        console.log('⏱️ Timer state changed:', {
+            isRunning: match?.timer?.isRunning,
+            isPaused: match?.timer?.isPaused,
+            elapsedSeconds: match?.timer?.elapsedSeconds,
+            startTime: match?.timer?.startTime,
+            addedTime: match?.timer?.addedTime
+        });
+
         if (match?.timer?.isRunning && !match?.timer?.isPaused) {
             const startTime = new Date(match.timer.startTime).getTime();
             const baseElapsed = match.timer.elapsedSeconds || 0;
@@ -53,7 +61,17 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
 
     const getPeriodName = () => {
         if (isFootball) {
-            return period === 1 ? '1st Half' : '2nd Half';
+            // Check for special statuses first
+            if (status === 'HALF_TIME') return 'Half Time';
+            if (status === 'FULL_TIME') return 'Full Time';
+            if (status === 'PENALTIES') return 'Penalty Shootout';
+            
+            // Check period for match phase
+            if (period === 1) return '1st Half';
+            if (period === 2) return '2nd Half';
+            if (period === 3) return 'Extra Time - 1st Half';
+            if (period === 4) return 'Extra Time - 2nd Half';
+            return `Period ${period}`;
         }
         if (isBasketball) {
             return `Q${period}`;
@@ -99,7 +117,14 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
             <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <span className="text-white font-semibold">{getPeriodName()}</span>
+                        <span className={`text-white font-semibold px-3 py-1 rounded-lg ${
+                            status === 'HALF_TIME' ? 'bg-orange-500' :
+                            status === 'FULL_TIME' || status === 'COMPLETED' ? 'bg-blue-500' :
+                            status === 'PENALTIES' ? 'bg-purple-500' :
+                            'bg-black/20'
+                        }`}>
+                            {getPeriodName()}
+                        </span>
                         {status === 'LIVE' && (
                             <motion.span
                                 animate={{ opacity: [1, 0.6, 1] }}
@@ -113,18 +138,26 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                     </div>
                     
                     {/* Match Timer */}
-                    <motion.div 
-                        animate={match?.timer?.isRunning ? { opacity: [1, 0.8, 1] } : {}}
-                        transition={{ duration: 1, repeat: Infinity }}
-                        className="bg-black/30 px-4 py-2 rounded-md"
-                    >
-                        <span className="text-3xl font-mono font-bold text-white">
-                            {formatTime(elapsedTime)}
-                        </span>
-                        {match?.timer?.addedTime > 0 && (
-                            <span className="text-yellow-300 text-sm ml-2">+{match.timer.addedTime}'</span>
-                        )}
-                    </motion.div>
+                    {(status === 'HALF_TIME' || status === 'FULL_TIME') ? (
+                        <div className="bg-black/30 px-4 py-2 rounded-md">
+                            <span className="text-2xl font-mono font-bold text-yellow-300">
+                                {status === 'HALF_TIME' ? 'HT' : 'FT'}
+                            </span>
+                        </div>
+                    ) : (
+                        <motion.div 
+                            animate={match?.timer?.isRunning ? { opacity: [1, 0.8, 1] } : {}}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="bg-black/30 px-4 py-2 rounded-md"
+                        >
+                            <span className="text-3xl font-mono font-bold text-white">
+                                {formatTime(elapsedTime)}
+                            </span>
+                            {match?.timer?.addedTime > 0 && (
+                                <span className="text-yellow-300 text-sm ml-2">+{match.timer.addedTime}'</span>
+                            )}
+                        </motion.div>
+                    )}
 
                     <div className="text-white/90 text-sm font-medium">
                         {match.matchCategory || 'Match'} • {sport}

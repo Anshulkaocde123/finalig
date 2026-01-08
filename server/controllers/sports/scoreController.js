@@ -162,10 +162,26 @@ const updateScore = asyncHandler(async (req, res) => {
                 match.timer.isRunning = true;
                 match.timer.isPaused = false;
                 match.timer.startTime = new Date();
+                // Set starting time if provided (for football half management)
+                if (timerData.elapsedSeconds !== undefined) {
+                    match.timer.elapsedSeconds = timerData.elapsedSeconds;
+                }
+                if (match.status === 'SCHEDULED') {
+                    match.status = 'LIVE';
+                }
+                break;
+            case 'startSecondHalf':
+                match.timer.isRunning = true;
+                match.timer.isPaused = false;
+                match.timer.startTime = new Date();
+                match.timer.elapsedSeconds = 45 * 60; // Start from 45:00
+                match.timer.addedTime = 0; // Reset added time for 2nd half
+                match.period = 2;
+                match.status = 'LIVE';
                 break;
             case 'pause':
                 match.timer.isPaused = true;
-                match.timer.elapsedSeconds = timerData.elapsed || match.timer.elapsedSeconds;
+                match.timer.elapsedSeconds = timerData.elapsedSeconds || timerData.elapsed || match.timer.elapsedSeconds;
                 break;
             case 'resume':
                 match.timer.isPaused = false;
@@ -181,6 +197,31 @@ const updateScore = asyncHandler(async (req, res) => {
                 match.timer.elapsedSeconds = timerData.elapsedSeconds || 0;
                 match.timer.isRunning = false;
                 match.timer.isPaused = false;
+                break;
+            case 'halfTime':
+                match.timer.isPaused = true;
+                match.timer.isRunning = false;
+                match.timer.elapsedSeconds = timerData.elapsedSeconds || match.timer.elapsedSeconds;
+                match.timer.addedTime = 0; // Clear 1st half added time
+                match.period = 2; // Move to 2nd half
+                match.status = 'HALF_TIME';
+                break;
+            case 'fullTime':
+                match.timer.isPaused = true;
+                match.timer.isRunning = false;
+                match.timer.elapsedSeconds = timerData.elapsedSeconds || match.timer.elapsedSeconds;
+                match.status = 'FULL_TIME';
+                break;
+            case 'nextPeriod':
+                // Move to next period and reset timer
+                if (match.period < match.maxPeriods) {
+                    match.period = match.period + 1;
+                    match.timer.elapsedSeconds = 0;
+                    match.timer.addedTime = 0;
+                    match.timer.isRunning = false;
+                    match.timer.isPaused = false;
+                    match.status = 'LIVE';
+                }
                 break;
         }
         

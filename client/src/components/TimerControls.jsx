@@ -15,7 +15,7 @@ const TimerControls = ({
     const [showAddTimeModal, setShowAddTimeModal] = useState(false);
     const [showPresetsModal, setShowPresetsModal] = useState(false);
     const [alerts, setAlerts] = useState([]);
-    const [lastAlert, setLastAlert] = useState(null);
+    const lastAlertRef = useRef(null);
     const timerRef = useRef(null);
     const alertRef = useRef(null);
     
@@ -43,7 +43,7 @@ const TimerControls = ({
         { label: 'Custom 15 min', seconds: 15 * 60, sport: 'ALL' },
     ];
     
-    // Key moment alerts
+    // Key moment alerts - only trigger ONCE when crossing exact threshold
     const checkAlerts = (seconds) => {
         const sport = match?.sport;
         const alertTimes = sport === 'FOOTBALL' 
@@ -53,9 +53,10 @@ const TimerControls = ({
             : [];
         
         alertTimes.forEach(alertTime => {
-            if (seconds >= alertTime && (!lastAlert || lastAlert !== alertTime)) {
+            // Only trigger if exactly at this second and haven't alerted for this time
+            if (seconds === alertTime && lastAlertRef.current !== alertTime) {
                 const minute = Math.floor(alertTime / 60);
-                setLastAlert(alertTime);
+                lastAlertRef.current = alertTime;
                 showAlert(`⏰ ${minute}' - Key Moment!`);
             }
         });
@@ -75,17 +76,46 @@ const TimerControls = ({
     // Real-time timer display with alerts
     useEffect(() => {
         if (isRunning) {
+            // Validate timer data before starting interval
+            if (!timer.startTime) {
+                console.error('Timer is running but startTime is missing');
+                return;
+            }
+            
             const startTime = new Date(timer.startTime).getTime();
+            
+            // Check for invalid date
+            if (isNaN(startTime)) {
+                console.error('Invalid timer startTime:', timer.startTime);
+                return;
+            }
+            
             const baseElapsed = timer.elapsedSeconds || 0;
 
             timerRef.current = setInterval(() => {
                 const now = Date.now();
                 const elapsed = baseElapsed + Math.floor((now - startTime) / 1000);
+                
+                // Safety check for extreme values
+                if (elapsed < 0 || elapsed > 10800) { // Max 3 hours
+                    clearInterval(timerRef.current);
+                    showAlert('⚠️ Timer error - please reset');
+                    return;
+                }
+                
                 setDisplayTime(elapsed);
                 checkAlerts(elapsed);
-            }, 100);
+            }, 1000);
         } else {
-            setDisplayTime(timer.elapsedSeconds || 0);
+            const newElapsed = timer.elapsedSeconds || 0;
+            setDisplayTime(newElapsed);
+            
+            // Reset alert tracking when time is manually changed while stopped
+            if (!isRunning && newElapsed !== displayTime && Math.abs(newElapsed - displayTime) > 5) {
+                lastAlertRef.current = null;
+                setAlerts([]); // Clear all alerts when time jumps
+            }
+            
             if (timerRef.current) {
                 clearInterval(timerRef.current);
             }
@@ -99,6 +129,14 @@ const TimerControls = ({
     }, [timer.isRunning, timer.isPaused, timer.startTime, timer.elapsedSeconds]);
     
     const handleSetPreset = (seconds) => {
+        // Validate seconds
+        if (seconds < 0 || seconds > 7200) { // Max 2 hours
+            showAlert('⚠️ Invalid time value');
+            return;
+        }
+        
+        lastAlertRef.current = null; // Reset alert tracking
+        setAlerts([]); // Clear any existing alerts
         onTimerAction?.({
             action: 'setTime',
             elapsedSeconds: seconds,
@@ -126,10 +164,23 @@ const TimerControls = ({
     };
 
     const handleStart = () => {
-        onTimerAction?.({
-            action: 'start',
-            timestamp: new Date().toISOString()
-        });
+        const period = match?.period || 1;
+        const sport = match?.sport;
+        
+        // For football, auto-set correct starting time based on period
+        if (sport === 'FOOTBALL') {
+            const startTime = period === 1 ? 0 : 45 * 60; // 0 for 1st half, 2700s (45min) for 2nd half
+            onTimerAction?.({
+                action: 'start',
+                elapsedSeconds: startTime,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            onTimerAction?.({
+                action: 'start',
+                timestamp: new Date().toISOString()
+            });
+        }
     };
 
     const handlePause = () => {
@@ -149,6 +200,9 @@ const TimerControls = ({
 
     const handleReset = () => {
         if (window.confirm('Are you sure you want to reset the timer?')) {
+            lastAlertRef.current = null; // Reset alert tracking
+            setAlerts([]); // Clear all alerts
+            setDisplayTime(0);
             onTimerAction?.({
                 action: 'reset',
                 timestamp: new Date().toISOString()
@@ -157,7 +211,7 @@ const TimerControls = ({
     };
 
     const handleAddTime = () => {
-        if (addedTime > 0) {
+        if (addedTime > 0 && addedTime <= 15) {
             onTimerAction?.({
                 action: 'addTime',
                 additionalSeconds: addedTime * 60,
@@ -165,6 +219,8 @@ const TimerControls = ({
             });
             setShowAddTimeModal(false);
             setAddedTime(0);
+        } else if (addedTime > 15) {
+            showAlert('⚠️ Maximum 15 minutes allowed');
         }
     };
 
@@ -173,6 +229,35 @@ const TimerControls = ({
             action: 'nextPeriod',
             timestamp: new Date().toISOString()
         });
+    };
+    
+    const handleHalfTime = () => {
+        if (window.confirm('Mark as Half-Time? This will move to 2nd half.')) {
+            onTimerAction?.({
+                action: 'halfTime',
+                elapsedSeconds: displayTime,
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+    
+    const handleStartSecondHalf = () => {
+        // Start 2nd half from 45:00
+        onTimerAction?.({
+            action: 'startSecondHalf',
+            elapsedSeconds: 45 * 60,
+            timestamp: new Date().toISOString()
+        });
+    };
+    
+    const handleFullTime = () => {
+        if (window.confirm('Mark as Full-Time? This will end regular time.')) {
+            onTimerAction?.({
+                action: 'fullTime',
+                elapsedSeconds: displayTime,
+                timestamp: new Date().toISOString()
+            });
+        }
     };
 
     const getPeriodLabel = () => {
@@ -235,8 +320,8 @@ const TimerControls = ({
                         +{timer.addedTime} added time
                     </div>
                 )}
-                <div className="text-gray-700 text-sm mt-1">
-                    {isRunning ? 'Running' : timer.isPaused ? 'Paused' : 'Stopped'}
+                <div className="text-gray-300 text-sm mt-1 font-semibold">
+                    {isRunning ? '▶️ Running' : timer.isPaused ? '⏸️ Paused' : '⏹️ Stopped'}
                 </div>
             </div>
             
@@ -342,18 +427,66 @@ const TimerControls = ({
                     Next Period
                 </motion.button>
             </div>
+            
+            {/* Football-Specific Controls */}
+            {match?.sport === 'FOOTBALL' && (
+                <div className="space-y-3 mt-3">
+                    {match?.status === 'HALF_TIME' ? (
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleStartSecondHalf}
+                            disabled={disabled}
+                            className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:opacity-50
+                                       text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
+                        >
+                            <span>▶️</span>
+                            Start 2nd Half
+                        </motion.button>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-3">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleHalfTime}
+                                disabled={disabled || match?.period !== 1}
+                                className="bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 disabled:opacity-50
+                                           text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
+                            >
+                                <span>⏸️</span>
+                                Half-Time
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleFullTime}
+                                disabled={disabled || match?.status === 'FULL_TIME' || match?.status === 'COMPLETED'}
+                                className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:opacity-50
+                                           text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
+                            >
+                                <span>🏁</span>
+                                Full-Time
+                            </motion.button>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Quick Time Presets (for quick adjustments) */}
             <div className="mt-4 pt-4 border-t border-gray-700">
-                <div className="text-gray-700 text-sm mb-2">Quick Set Time:</div>
+                <div className="text-gray-300 text-sm mb-2">⚡ Jump to Time (Testing/Resume):</div>
                 <div className="flex gap-2 flex-wrap">
                     {[45, 90, 20, 12, 10, 15].map(mins => (
                         <button
                             key={mins}
-                            onClick={() => onTimerAction?.({ 
-                                action: 'setTime', 
-                                seconds: mins * 60 
-                            })}
+                            onClick={() => {
+                                lastAlertRef.current = null; // Reset alerts
+                                setAlerts([]); // Clear all alerts
+                                onTimerAction?.({
+                                    action: 'setTime',
+                                    elapsedSeconds: mins * 60
+                                });
+                            }}
                             disabled={disabled || isRunning}
                             className="px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50
                                        text-gray-300 text-sm rounded transition-colors"
