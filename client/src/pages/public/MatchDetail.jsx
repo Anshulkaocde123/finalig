@@ -61,7 +61,14 @@ const MatchDetail = ({ isDarkMode, setIsDarkMode }) => {
         fetchFouls();
         socket.on('matchUpdate', (updatedMatch) => {
             if (updatedMatch._id === id) {
-                console.log('📡 Match updated via socket');
+                console.log('📡 Match updated via socket (MatchDetail):', {
+                    matchId: updatedMatch._id,
+                    scoreA_runs: updatedMatch.scoreA?.runs,
+                    scoreA_balls: updatedMatch.scoreA?.balls,
+                    scoreA_overs: updatedMatch.scoreA?.overs,
+                    scoreB_runs: updatedMatch.scoreB?.runs,
+                    scoreB_balls: updatedMatch.scoreB?.balls
+                });
                 setMatch(updatedMatch);
             }
         });
@@ -132,14 +139,16 @@ const MatchDetail = ({ isDarkMode, setIsDarkMode }) => {
     const renderScoreboard = () => {
         if (!match) return null;
         const props = { match, isDarkMode, fouls };
+        // Add key to force re-render when match updates
+        const matchKey = `${match._id}-${match.scoreA?.balls || 0}-${match.scoreB?.balls || 0}-${match.updatedAt}`;
         switch (match.sport) {
-            case 'CRICKET': return <ProfessionalCricketScorecard match={match} isDarkMode={isDarkMode} />;
-            case 'BADMINTON': return <BadmintonScoreboard {...props} />;
-            case 'TABLE_TENNIS': case 'VOLLEYBALL': return <SetScoreboard {...props} />;
-            case 'FOOTBALL': case 'HOCKEY': return <FootballScoreboard {...props} />;
-            case 'BASKETBALL': return <BasketballScoreboard {...props} />;
-            case 'CHESS': return <ChessScoreboard {...props} />;
-            default: return <SimpleScoreboard {...props} />;
+            case 'CRICKET': return <ProfessionalCricketScorecard key={matchKey} match={match} isDarkMode={isDarkMode} />;
+            case 'BADMINTON': return <BadmintonScoreboard key={matchKey} {...props} />;
+            case 'TABLE_TENNIS': case 'VOLLEYBALL': return <SetScoreboard key={matchKey} {...props} />;
+            case 'FOOTBALL': case 'HOCKEY': return <FootballScoreboard key={matchKey} {...props} />;
+            case 'BASKETBALL': return <BasketballScoreboard key={matchKey} {...props} />;
+            case 'CHESS': return <ChessScoreboard key={matchKey} {...props} />;
+            default: return <SimpleScoreboard key={matchKey} {...props} />;
         }
     };
 

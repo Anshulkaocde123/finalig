@@ -5,15 +5,25 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    minify: 'esbuild',
+    minify: 'terser',
     sourcemap: false,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500, // Increased to account for three.js (1.1MB)
+    cssCodeSplit: true,
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.logs in production only
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom'],
-          'framer': ['framer-motion'],
-          'three': ['three', '@react-three/fiber', '@react-three/drei']
+          'react-core': ['react', 'react-dom'],
+          'router': ['react-router-dom'],
+          'animations': ['framer-motion'],
+          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+          'socket': ['socket.io-client'],
+          'ui-utils': ['axios', 'react-hot-toast', 'lucide-react']
         }
       }
     }

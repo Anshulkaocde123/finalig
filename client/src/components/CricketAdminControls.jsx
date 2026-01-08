@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Target, Hand, Footprints, Play, Zap, AlertTriangle, RefreshCw, ArrowRight, Users } from 'lucide-react';
 
 /**
  * Advanced Cricket Admin Controls
@@ -63,13 +64,13 @@ const CricketAdminControls = ({ match, onUpdate }) => {
     }, [bowlingSquad, currentBowler, match._id, squadA, squadB]);
 
     const dismissalTypes = [
-        { value: 'BOWLED', label: 'Bowled', icon: '🎯', needsCatcher: false },
-        { value: 'CAUGHT', label: 'Caught', icon: '🙌', needsCatcher: true },
-        { value: 'LBW', label: 'LBW', icon: '🦵', needsCatcher: false },
-        { value: 'RUN_OUT', label: 'Run Out', icon: '🏃', needsCatcher: true },
-        { value: 'STUMPED', label: 'Stumped', icon: '🧤', needsCatcher: true },
-        { value: 'HIT_WICKET', label: 'Hit Wicket', icon: '💥', needsCatcher: false },
-        { value: 'RETIRED', label: 'Retired Hurt', icon: '🏥', needsCatcher: false },
+        { value: 'BOWLED', label: 'Bowled', Icon: Target, needsCatcher: false },
+        { value: 'CAUGHT', label: 'Caught', Icon: Hand, needsCatcher: true },
+        { value: 'LBW', label: 'LBW', Icon: Footprints, needsCatcher: false },
+        { value: 'RUN_OUT', label: 'Run Out', Icon: Play, needsCatcher: true },
+        { value: 'STUMPED', label: 'Stumped', Icon: Hand, needsCatcher: true },
+        { value: 'HIT_WICKET', label: 'Hit Wicket', Icon: Target, needsCatcher: false },
+        { value: 'RETIRED', label: 'Retired Hurt', Icon: Users, needsCatcher: false },
     ];
 
     const handleUpdate = async (key, payload) => {
@@ -168,7 +169,10 @@ const CricketAdminControls = ({ match, onUpdate }) => {
             {/* No Squad Warning */}
             {!hasSquads && (
                 <div className="bg-amber-900/30 border border-amber-500/30 rounded-xl p-4 text-center">
-                    <div className="text-amber-400 font-bold mb-1">⚠️ No Squad Configured</div>
+                    <div className="flex items-center justify-center gap-2 text-amber-400 font-bold mb-1">
+                        <AlertTriangle className="w-5 h-5" />
+                        No Squad Configured
+                    </div>
                     <div className="text-amber-300/70 text-sm">
                         Add player names using the "Add Players" button to enable full scorecard features.
                     </div>
@@ -184,7 +188,9 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                 {/* Current Batsmen */}
                 <div className="grid grid-cols-2 gap-4 mb-4" key={`batsmen-${currentBatsmen?.striker?.playerName}-${currentBatsmen?.nonStriker?.playerName}`}>
                     <div className="bg-black/30 rounded-lg p-3">
-                        <div className="text-xs text-yellow-400 font-bold">⚡ STRIKER</div>
+                        <div className="flex items-center gap-1 text-xs text-yellow-400 font-bold">
+                            <Zap className="w-3 h-3" /> STRIKER
+                        </div>
                         <div className="text-white font-bold text-lg">
                             {currentBatsmen?.striker?.playerName || 'Not Selected'}
                         </div>
@@ -195,7 +201,9 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                         )}
                     </div>
                     <div className="bg-black/30 rounded-lg p-3">
-                        <div className="text-xs text-slate-400 font-bold">🏃 NON-STRIKER</div>
+                        <div className="flex items-center gap-1 text-xs text-slate-400 font-bold">
+                            <Play className="w-3 h-3" /> NON-STRIKER
+                        </div>
                         <div className="text-white font-bold text-lg">
                             {currentBatsmen?.nonStriker?.playerName || 'Not Selected'}
                         </div>
@@ -209,7 +217,9 @@ const CricketAdminControls = ({ match, onUpdate }) => {
 
                 {/* Current Bowler */}
                 <div className="bg-black/30 rounded-lg p-3">
-                    <div className="text-xs text-blue-400 font-bold">🎯 CURRENT BOWLER</div>
+                    <div className="flex items-center gap-1 text-xs text-blue-400 font-bold">
+                        <Target className="w-3 h-3" /> CURRENT BOWLER
+                    </div>
                     <div className="flex justify-between items-center">
                         <div className="text-white font-bold text-lg">
                             {currentBowler?.playerName || 'Not Selected'}
@@ -233,7 +243,8 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                     disabled={loading === 'switch-strike'}
                     className={btnClass('bg-indigo-600')}
                 >
-                    🔄 Switch Strike
+                    <RefreshCw className="w-4 h-4" />
+                    Switch Strike
                 </motion.button>
 
                 {/* End Over */}
@@ -244,7 +255,8 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                     disabled={loading === 'end-over'}
                     className={btnClass('bg-purple-600')}
                 >
-                    ➡️ End Over
+                    <ArrowRight className="w-4 h-4" />
+                    End Over
                 </motion.button>
 
                 {/* Select Batsman */}
@@ -254,7 +266,8 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                     onClick={() => setShowBatsmanModal(true)}
                     className={btnClass('bg-green-600')}
                 >
-                    🏏 Select Batsman
+                    <Target className="w-4 h-4" />
+                    Select Batsman
                 </motion.button>
 
                 {/* Select Bowler */}
@@ -264,7 +277,8 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                     onClick={() => setShowBowlerModal(true)}
                     className={btnClass('bg-blue-600')}
                 >
-                    🎯 Change Bowler
+                    <Target className="w-4 h-4" />
+                    Change Bowler
                 </motion.button>
 
                 {/* Dismissal with Details */}
@@ -433,10 +447,10 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                                                 </div>
                                                 {player.role && (
                                                     <span className="text-xs text-slate-400 bg-slate-700 px-3 py-1 rounded-full font-bold">
-                                                        {player.role === 'WICKET_KEEPER' ? '🧤 WK' : 
-                                                         player.role === 'ALL_ROUNDER' ? '⭐ AR' :
-                                                         player.role === 'BATSMAN' ? '🏏 BAT' :
-                                                         player.role === 'BOWLER' ? '🎯 BOWL' : ''}
+                                                        {player.role === 'WICKET_KEEPER' ? 'WK' : 
+                                                         player.role === 'ALL_ROUNDER' ? 'AR' :
+                                                         player.role === 'BATSMAN' ? 'BAT' :
+                                                         player.role === 'BOWLER' ? 'BOWL' : ''}
                                                     </span>
                                                 )}
                                             </div>
@@ -451,7 +465,10 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                                                     {loading === 'select-batsman' ? (
                                                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                                     ) : (
-                                                        <>⚡ Striker</>
+                                                        <>
+                                                            <Zap className="w-4 h-4" />
+                                                            Striker
+                                                        </>
                                                     )}
                                                 </motion.button>
                                                 <motion.button
@@ -464,7 +481,10 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                                                     {loading === 'select-batsman' ? (
                                                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                                     ) : (
-                                                        <>🏃 Non-Striker</>
+                                                        <>
+                                                            <Play className="w-4 h-4" />
+                                                            Non-Striker
+                                                        </>
                                                     )}
                                                 </motion.button>
                                             </div>
@@ -473,7 +493,7 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                                 </div>
                             ) : (
                                 <div className="text-center text-slate-500 py-8 bg-slate-800/50 rounded-xl">
-                                    <div className="text-4xl mb-2">🏏</div>
+                                    <Target className="w-12 h-12 mx-auto mb-2 text-slate-600" />
                                     <div>No batsmen available</div>
                                     <div className="text-xs mt-1">All players are either batting or out</div>
                                 </div>

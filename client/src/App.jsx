@@ -24,36 +24,27 @@ import './App.css';
 import Dashboard from './pages/admin/Dashboard';
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage or system preference
-    const saved = localStorage.getItem('darkMode');
-    if (saved !== null) return JSON.parse(saved);
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
+  // Professional light theme only - dark mode removed for better visibility
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
+    // Ensure dark class is never applied
+    document.documentElement.classList.remove('dark');
+    localStorage.removeItem('darkMode');
+  }, []);
 
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Home isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
-        <Route path="/leaderboard" element={<Leaderboard isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
-        <Route path="/match/:id" element={<MatchDetail isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
-        <Route path="/about" element={<About isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
-        <Route path="/student-council" element={<StudentCouncil isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/match/:id" element={<MatchDetail />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/student-council" element={<StudentCouncil />} />
         <Route path="/login" element={<Login />} />
 
         {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/admin" element={<AdminLayout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />}>
+          <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="departments" element={<Departments />} />

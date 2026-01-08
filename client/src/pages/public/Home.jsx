@@ -96,6 +96,13 @@ const Home = ({ isDarkMode, setIsDarkMode }) => {
         socket.on('disconnect', () => setIsConnected(false));
 
         socket.on('matchUpdate', (updatedMatch) => {
+            console.log('📡 Match update received (Home):', {
+                matchId: updatedMatch._id,
+                sport: updatedMatch.sport,
+                scoreA: updatedMatch.scoreA?.runs,
+                scoreB: updatedMatch.scoreB?.runs,
+                balls: updatedMatch.scoreA?.balls
+            });
             setMatches(prev => sortMatches(prev.map(m => m._id === updatedMatch._id ? updatedMatch : m)));
         });
 
