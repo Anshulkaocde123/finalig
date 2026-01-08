@@ -114,7 +114,7 @@ const updateScore = asyncHandler(async (req, res) => {
                 break;
 
             case 'updateSetPoints':
-                // Update current set points
+                // Update current set points with validation
                 if (!match.currentSet) {
                     match.currentSet = { setNumber: 1, pointsA: 0, pointsB: 0 };
                     if (match.status === 'SCHEDULED') {
@@ -125,12 +125,15 @@ const updateScore = asyncHandler(async (req, res) => {
                     }
                 }
                 
+                // Validate points - ensure integer, prevent negative, max 30
+                const validPoints = Math.max(-50, Math.min(Math.floor(points), 50));
+                
                 if (team === 'A') {
-                    const newPoints = (match.currentSet.pointsA || 0) + points;
-                    match.currentSet.pointsA = Math.max(0, newPoints); // Prevent negative
+                    const newPoints = (match.currentSet.pointsA ?? 0) + validPoints;
+                    match.currentSet.pointsA = Math.max(0, Math.min(newPoints, 50)); // Max 50 points
                 } else if (team === 'B') {
-                    const newPoints = (match.currentSet.pointsB || 0) + points;
-                    match.currentSet.pointsB = Math.max(0, newPoints); // Prevent negative
+                    const newPoints = (match.currentSet.pointsB ?? 0) + validPoints;
+                    match.currentSet.pointsB = Math.max(0, Math.min(newPoints, 50)); // Max 50 points
                 }
                 console.log(`✅ Point ${points > 0 ? 'added to' : 'removed from'} Team ${team}: ${match.currentSet.pointsA}-${match.currentSet.pointsB}`);
                 break;
@@ -151,11 +154,11 @@ const updateScore = asyncHandler(async (req, res) => {
                     winner: setWinner
                 });
 
-                // Update sets won
+                // Update sets won with validation
                 if (setWinner === 'A') {
-                    match.scoreA = (match.scoreA || 0) + 1;
+                    match.scoreA = Math.max(0, Math.min((match.scoreA ?? 0) + 1, match.maxSets));
                 } else {
-                    match.scoreB = (match.scoreB || 0) + 1;
+                    match.scoreB = Math.max(0, Math.min((match.scoreB ?? 0) + 1, match.maxSets));
                 }
 
                 console.log(`✅ Set ${match.currentSet.setNumber} completed. Winner: Team ${setWinner}. Sets: ${match.scoreA}-${match.scoreB}`);
@@ -195,9 +198,15 @@ const updateScore = asyncHandler(async (req, res) => {
         match.currentSet = { setNumber: 1, pointsA: 0, pointsB: 0 };
     }
 
-    // Update sets won
-    if (setsA !== undefined) match.scoreA = setsA;
-    if (setsB !== undefined) match.scoreB = setsB;
+    // Update sets won with validation
+    if (setsA !== undefined) {
+        const validSetsA = Math.max(0, Math.min(Math.floor(setsA), match.maxSets ?? 5));
+        match.scoreA = validSetsA;
+    }
+    if (setsB !== undefined) {
+        const validSetsB = Math.max(0, Math.min(Math.floor(setsB), match.maxSets ?? 5));
+        match.scoreB = validSetsB;
+    }
 
     // Update current set score
     if (currentSetScore) {

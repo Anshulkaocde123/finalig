@@ -107,6 +107,12 @@ const updateScore = asyncHandler(async (req, res) => {
 
     // ========== SWITCH STRIKE ==========
     if (switchStrike) {
+        // Check if match is completed
+        if (match.status === 'COMPLETED') {
+            res.status(400);
+            throw new Error('Cannot switch strike on a completed match');
+        }
+        
         if (match.currentBatsmen?.striker && match.currentBatsmen?.nonStriker) {
             const temp = match.currentBatsmen.striker;
             match.currentBatsmen.striker = match.currentBatsmen.nonStriker;
@@ -133,6 +139,12 @@ const updateScore = asyncHandler(async (req, res) => {
 
     // ========== END OVER ==========
     if (endOver) {
+        // Check if match is completed
+        if (match.status === 'COMPLETED') {
+            res.status(400);
+            throw new Error('Cannot end over on a completed match');
+        }
+        
         match.currentOverBalls = [];
         // Auto switch strike at end of over
         if (match.currentBatsmen?.striker && match.currentBatsmen?.nonStriker) {
@@ -151,6 +163,12 @@ const updateScore = asyncHandler(async (req, res) => {
 
     // ========== SWAP INNINGS ==========
     if (swapInnings) {
+        // Check if match is completed
+        if (match.status === 'COMPLETED') {
+            res.status(400);
+            throw new Error('Cannot swap innings on a completed match');
+        }
+        
         // Set target for 2nd innings
         const firstInningsScore = match.battingTeam === 'A' ? match.scoreA : match.scoreB;
         match.target = firstInningsScore.runs + 1;
@@ -175,6 +193,12 @@ const updateScore = asyncHandler(async (req, res) => {
 
     // ========== SELECT BATSMAN ==========
     if (selectBatsman) {
+        // Check if match is completed
+        if (match.status === 'COMPLETED') {
+            res.status(400);
+            throw new Error('Cannot change batsman on a completed match');
+        }
+        
         const { playerId, playerName, position } = selectBatsman;
         const battingSquad = match.battingTeam === 'A' ? match.squadA : match.squadB;
         
@@ -218,6 +242,12 @@ const updateScore = asyncHandler(async (req, res) => {
             };
             battingSquad.push(selectedPlayer);
             console.log(`➕ Added new player to squad: ${playerName}`);
+        } else if (selectedPlayer) {
+            // Ensure existing player has initialized stats
+            if (selectedPlayer.runsScored === undefined) selectedPlayer.runsScored = 0;
+            if (selectedPlayer.ballsFaced === undefined) selectedPlayer.ballsFaced = 0;
+            if (selectedPlayer.fours === undefined) selectedPlayer.fours = 0;
+            if (selectedPlayer.sixes === undefined) selectedPlayer.sixes = 0;
         }
         
         if (!selectedPlayer) {
@@ -243,10 +273,10 @@ const updateScore = asyncHandler(async (req, res) => {
             // Update match.currentBatsmen.striker
             match.currentBatsmen.striker = {
                 playerName: selectedPlayer.playerName,
-                runsScored: selectedPlayer.runsScored || 0,
-                ballsFaced: selectedPlayer.ballsFaced || 0,
-                fours: selectedPlayer.fours || 0,
-                sixes: selectedPlayer.sixes || 0,
+                runsScored: selectedPlayer.runsScored ?? 0,
+                ballsFaced: selectedPlayer.ballsFaced ?? 0,
+                fours: selectedPlayer.fours ?? 0,
+                sixes: selectedPlayer.sixes ?? 0,
                 isOnStrike: true
             };
             console.log(`✅ Striker set to: "${selectedPlayer.playerName}"`);
@@ -277,10 +307,10 @@ const updateScore = asyncHandler(async (req, res) => {
             // Update match.currentBatsmen.nonStriker
             match.currentBatsmen.nonStriker = {
                 playerName: selectedPlayer.playerName,
-                runsScored: selectedPlayer.runsScored || 0,
-                ballsFaced: selectedPlayer.ballsFaced || 0,
-                fours: selectedPlayer.fours || 0,
-                sixes: selectedPlayer.sixes || 0,
+                runsScored: selectedPlayer.runsScored ?? 0,
+                ballsFaced: selectedPlayer.ballsFaced ?? 0,
+                fours: selectedPlayer.fours ?? 0,
+                sixes: selectedPlayer.sixes ?? 0,
                 isOnStrike: false
             };
             console.log(`✅ Non-Striker set to: "${selectedPlayer.playerName}"`);
@@ -308,15 +338,58 @@ const updateScore = asyncHandler(async (req, res) => {
 
     // ========== SELECT BOWLER ==========
     if (selectBowler) {
+        // Check if match is completed
+        if (match.status === 'COMPLETED') {
+            res.status(400);
+            throw new Error('Cannot change bowler on a completed match');
+        }
+        
         const { bowlerId, bowlerName } = selectBowler;
+        
+        // Determine bowling squad based on batting team
         const bowlingSquad = match.battingTeam === 'A' ? match.squadB : match.squadA;
         
-        // Clear previous bowler flag
-        bowlingSquad.forEach(p => p.isCurrentBowler = false);
+        console.log('🎳 SELECT BOWLER REQUEST:', { 
+            requestedName: bowlerName, 
+            requestedId: bowlerId,
+            battingTeam: match.battingTeam,
+            bowlingTeam: match.battingTeam === 'A' ? 'B' : 'A'
+        });
+        console.log('🎳 Bowling squad:', bowlingSquad.map((p, idx) => `${idx}: ${p.playerName}`));
         
-        let bowler = bowlingSquad.find(p => p.playerName === bowlerName || p._id?.toString() === bowlerId);
+        if (!bowlingSquad || bowlingSquad.length === 0) {
+            res.status(400);
+            throw new Error('Bowling squad not configured');
+        }
         
+        // Clear previous bowler flags
+        bowlingSquad.forEach(p => {
+            p.isCurrentBowler = false;
+        });
+        
+        // Find the bowler in the squad - exact match on playerName
+        let bowler = null;
+        
+        // Try to find by ID first if provided
+        if (bowlerId) {
+            bowler = bowlingSquad.find(p => p._id && p._id.toString() === bowlerId.toString());
+            console.log('🎳 Search by ID:', bowlerId, '→', bowler ? 'FOUND: ' + bowler.playerName : 'NOT FOUND');
+        }
+        
+        // If not found by ID, search by exact name match
         if (!bowler && bowlerName) {
+            bowler = bowlingSquad.find(p => {
+                const playerName = p.playerName || p.name;
+                const matches = playerName === bowlerName;
+                console.log(`  🔍 Checking "${playerName}" === "${bowlerName}": ${matches}`);
+                return matches;
+            });
+            console.log('🎳 Search by name:', bowlerName, '→', bowler ? 'FOUND: ' + bowler.playerName : 'NOT FOUND');
+        }
+        
+        // If still not found, create new bowler entry in squad
+        if (!bowler && bowlerName) {
+            console.log('🎳 ⚠️ Bowler not found in squad, creating new entry:', bowlerName);
             bowler = {
                 playerName: bowlerName,
                 oversBowled: 0,
@@ -331,25 +404,49 @@ const updateScore = asyncHandler(async (req, res) => {
             bowlingSquad.push(bowler);
         }
         
-        if (bowler) {
-            bowler.isCurrentBowler = true;
-            match.currentBowler = {
-                playerName: bowler.playerName,
-                oversBowled: bowler.oversBowled || 0,
-                ballsBowled: bowler.ballsBowled || 0,
-                runsConceded: bowler.runsConceded || 0,
-                wicketsTaken: bowler.wicketsTaken || 0,
-                maidens: bowler.maidens || 0
-            };
+        if (!bowler) {
+            res.status(400);
+            throw new Error('Could not identify bowler from request');
         }
         
+        // Mark as current bowler in squad
+        bowler.isCurrentBowler = true;
+        
+        // Update match.currentBowler with complete stats
+        match.currentBowler = {
+            playerName: bowler.playerName,
+            oversBowled: bowler.oversBowled ?? 0,
+            ballsBowled: bowler.ballsBowled ?? 0,
+            runsConceded: bowler.runsConceded ?? 0,
+            wicketsTaken: bowler.wicketsTaken ?? 0,
+            maidens: bowler.maidens ?? 0
+        };
+        
+        console.log('✅ BOWLER SELECTED:', {
+            name: match.currentBowler.playerName,
+            stats: `${match.currentBowler.oversBowled}-${match.currentBowler.maidens}-${match.currentBowler.runsConceded}-${match.currentBowler.wicketsTaken}`
+        });
+        
+        // Save to database
         await match.save();
+        
+        // Populate for response
         const populatedMatch = await CricketMatch.findById(matchId)
             .populate('teamA', 'name shortCode logo')
             .populate('teamB', 'name shortCode logo');
+        
+        // Emit real-time update
         const io = req.app.get('io');
-        if (io) io.emit('matchUpdate', populatedMatch);
-        return res.json({ success: true, message: 'Bowler selected', data: populatedMatch });
+        if (io) {
+            console.log('📡 Broadcasting bowler change via Socket.io');
+            io.emit('matchUpdate', populatedMatch);
+        }
+        
+        return res.json({ 
+            success: true, 
+            message: `Bowler changed to ${match.currentBowler.playerName}`, 
+            data: populatedMatch 
+        });
     }
 
     // Handle toss update first (doesn't affect score)
@@ -420,6 +517,67 @@ const updateScore = asyncHandler(async (req, res) => {
             match.scoreB = { ...lastAction.before };
         }
 
+        // ALSO UNDO PLAYER STATS
+        if (lastAction.action && match.currentBatsmen?.striker) {
+            const battingSquad = match.battingTeam === 'A' ? match.squadA : match.squadB;
+            const bowlingSquad = match.battingTeam === 'A' ? match.squadB : match.squadA;
+            const strikerName = match.currentBatsmen.striker.playerName;
+            const batsmanInSquad = battingSquad.find(p => p.playerName === strikerName);
+            
+            if (batsmanInSquad && lastAction.action.includes('runs')) {
+                // Extract runs from action (e.g., "4 runs", "1 run")
+                const runsMatch = lastAction.action.match(/(\d+)\s+runs?/);
+                if (runsMatch) {
+                    const runsToUndo = parseInt(runsMatch[1]);
+                    // Undo runs and balls faced
+                    batsmanInSquad.runsScored = Math.max(0, (batsmanInSquad.runsScored ?? 0) - runsToUndo);
+                    batsmanInSquad.ballsFaced = Math.max(0, (batsmanInSquad.ballsFaced ?? 0) - 1);
+                    
+                    // Undo fours/sixes
+                    if (runsToUndo === 4) {
+                        batsmanInSquad.fours = Math.max(0, (batsmanInSquad.fours ?? 0) - 1);
+                    } else if (runsToUndo === 6) {
+                        batsmanInSquad.sixes = Math.max(0, (batsmanInSquad.sixes ?? 0) - 1);
+                    }
+                    
+                    // Sync with currentBatsmen display
+                    match.currentBatsmen.striker.runsScored = batsmanInSquad.runsScored;
+                    match.currentBatsmen.striker.ballsFaced = batsmanInSquad.ballsFaced;
+                    match.currentBatsmen.striker.fours = batsmanInSquad.fours;
+                    match.currentBatsmen.striker.sixes = batsmanInSquad.sixes;
+                }
+            }
+            
+            // Undo bowler stats
+            if (match.currentBowler?.playerName) {
+                const bowlerInSquad = bowlingSquad.find(p => p.playerName === match.currentBowler.playerName);
+                if (bowlerInSquad) {
+                    const runsMatch = lastAction.action.match(/(\d+)\s+runs?/);
+                    if (runsMatch) {
+                        const runsToUndo = parseInt(runsMatch[1]);
+                        bowlerInSquad.runsConceded = Math.max(0, (bowlerInSquad.runsConceded ?? 0) - runsToUndo);
+                        bowlerInSquad.ballsBowled = Math.max(0, (bowlerInSquad.ballsBowled ?? 0) - 1);
+                        
+                        // Recalculate overs
+                        const totalBalls = bowlerInSquad.ballsBowled;
+                        const overs = Math.floor(totalBalls / 6);
+                        const balls = totalBalls % 6;
+                        bowlerInSquad.oversBowled = parseFloat((overs + (balls / 10)).toFixed(1));
+                        
+                        // Sync with currentBowler display
+                        match.currentBowler.runsConceded = bowlerInSquad.runsConceded;
+                        match.currentBowler.ballsBowled = bowlerInSquad.ballsBowled;
+                        match.currentBowler.oversBowled = bowlerInSquad.oversBowled;
+                    }
+                }
+            }
+            
+            // Remove last ball from currentOverBalls
+            if (match.currentOverBalls && match.currentOverBalls.length > 0) {
+                match.currentOverBalls.pop();
+            }
+        }
+
         // Remove from history
         match.scoreHistory.pop();
 
@@ -464,16 +622,16 @@ const updateScore = asyncHandler(async (req, res) => {
             return;
         }
         
-        // Validate and update runs
-        const validRuns = Math.max(0, Math.min(runsToAdd, 7));
-        batsmanInSquad.runsScored = (batsmanInSquad.runsScored || 0) + validRuns;
+        // Validate and update runs - ensure non-negative, max 7 runs per ball
+        const validRuns = Math.max(0, Math.min(Math.floor(runsToAdd), 7));
+        batsmanInSquad.runsScored = Math.max(0, (batsmanInSquad.runsScored ?? 0) + validRuns);
         
-        // Update balls faced only for legal deliveries
-        if (isBall) batsmanInSquad.ballsFaced = (batsmanInSquad.ballsFaced || 0) + 1;
+        // Update balls faced only for legal deliveries - ensure non-negative
+        if (isBall) batsmanInSquad.ballsFaced = Math.max(0, (batsmanInSquad.ballsFaced ?? 0) + 1);
         
-        // Track boundaries
-        if (isFour) batsmanInSquad.fours = (batsmanInSquad.fours || 0) + 1;
-        if (isSix) batsmanInSquad.sixes = (batsmanInSquad.sixes || 0) + 1;
+        // Track boundaries - ensure non-negative
+        if (isFour) batsmanInSquad.fours = Math.max(0, (batsmanInSquad.fours ?? 0) + 1);
+        if (isSix) batsmanInSquad.sixes = Math.max(0, (batsmanInSquad.sixes ?? 0) + 1);
         
         // Sync with currentBatsmen display object
         match.currentBatsmen.striker.runsScored = batsmanInSquad.runsScored;
@@ -605,10 +763,10 @@ const updateScore = asyncHandler(async (req, res) => {
         // 2. HANDLE INCREMENTAL RUN UPDATES (0, 1, 2, 3, 4, 6 runs in a ball)
         if (runs !== undefined && extraType === undefined && !isWicket && runs <= 6) {
             if (isUndo) {
-                score.runs = Math.max(0, score.runs - runs);
+                score.runs = Math.max(0, (score.runs ?? 0) - Math.max(0, runs));
                 updateOvers(score, true);
             } else {
-                score.runs += runs;
+                score.runs = Math.max(0, (score.runs ?? 0) + Math.max(0, runs));
                 updateOvers(score, false);
                 
                 // Update player stats
@@ -621,10 +779,11 @@ const updateScore = asyncHandler(async (req, res) => {
             return;
         }
 
-        // 3. HANDLE WICKET
+        // 3. HANDLE WICKET - max 10 wickets per innings
         if (isWicket) {
             const wicketVal = isUndo ? -1 : 1;
-            score.wickets = Math.max(0, Math.min(10, score.wickets + wicketVal));
+            const newWickets = (score.wickets ?? 0) + wicketVal;
+            score.wickets = Math.max(0, Math.min(10, newWickets));
             
             // Only update overs for non-undo wickets (wickets consume a ball)
             if (!isUndo) {
@@ -820,13 +979,24 @@ const updateScore = asyncHandler(async (req, res) => {
         });
         
         io.emit('matchUpdate', populatedMatch);
+        
+        // Return populated match in response
+        return res.status(200).json({
+            success: true,
+            data: populatedMatch
+        });
     } else {
         console.warn('⚠️ Socket.io not available - cricket update not broadcasted');
     }
 
+    // Populate before returning if Socket.io not available
+    const finalMatch = await CricketMatch.findById(matchId)
+        .populate('teamA', 'name shortCode logo')
+        .populate('teamB', 'name shortCode logo');
+
     res.status(200).json({
         success: true,
-        data: match
+        data: finalMatch
     });
 });
 

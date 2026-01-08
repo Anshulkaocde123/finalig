@@ -181,7 +181,9 @@ const updateScore = asyncHandler(async (req, res) => {
                 break;
             case 'pause':
                 match.timer.isPaused = true;
-                match.timer.elapsedSeconds = timerData.elapsedSeconds || timerData.elapsed || match.timer.elapsedSeconds;
+                // Validate elapsed seconds - max 3 hours (10800s)
+                const elapsed = timerData.elapsedSeconds ?? timerData.elapsed ?? match.timer.elapsedSeconds ?? 0;
+                match.timer.elapsedSeconds = Math.max(0, Math.min(Math.floor(elapsed), 10800));
                 break;
             case 'resume':
                 match.timer.isPaused = false;
@@ -191,10 +193,15 @@ const updateScore = asyncHandler(async (req, res) => {
                 match.timer = { isRunning: false, isPaused: false, elapsedSeconds: 0, addedTime: 0, startTime: null };
                 break;
             case 'addTime':
-                match.timer.addedTime = (match.timer.addedTime || 0) + (timerData.additionalSeconds || timerData.seconds || 0);
+                // Validate additional seconds - max 30 minutes (1800s)
+                const additionalSeconds = timerData.additionalSeconds ?? timerData.seconds ?? 0;
+                const validAdditional = Math.max(0, Math.min(Math.floor(additionalSeconds), 1800));
+                match.timer.addedTime = Math.max(0, (match.timer.addedTime ?? 0) + validAdditional);
                 break;
             case 'setTime':
-                match.timer.elapsedSeconds = timerData.elapsedSeconds || 0;
+                // Validate set time - max 3 hours (10800s)
+                const setElapsed = timerData.elapsedSeconds ?? 0;
+                match.timer.elapsedSeconds = Math.max(0, Math.min(Math.floor(setElapsed), 10800));
                 match.timer.isRunning = false;
                 match.timer.isPaused = false;
                 break;
@@ -256,33 +263,36 @@ const updateScore = asyncHandler(async (req, res) => {
         throw new Error('Cannot update a completed match');
     }
 
-    // Update scores
+    // Update scores with validation
     if (pointsA !== undefined) {
-        if (typeof pointsA !== 'number' || pointsA < 0) {
+        if (typeof pointsA !== 'number' || isNaN(pointsA)) {
             res.status(400);
-            throw new Error('pointsA must be a non-negative number');
+            throw new Error('pointsA must be a valid number');
         }
-        match.scoreA = pointsA;
+        // Ensure non-negative, reasonable upper bound (100)
+        match.scoreA = Math.max(0, Math.min(Math.floor(pointsA), 100));
     }
     if (pointsB !== undefined) {
-        if (typeof pointsB !== 'number' || pointsB < 0) {
+        if (typeof pointsB !== 'number' || isNaN(pointsB)) {
             res.status(400);
-            throw new Error('pointsB must be a non-negative number');
+            throw new Error('pointsB must be a valid number');
         }
-        match.scoreB = pointsB;
+        // Ensure non-negative, reasonable upper bound (100)
+        match.scoreB = Math.max(0, Math.min(Math.floor(pointsB), 100));
     }
 
-    // Update period
+    // Update period with validation
     if (period !== undefined) {
-        if (typeof period !== 'number' || period < 1) {
+        if (typeof period !== 'number' || isNaN(period) || period < 1) {
             res.status(400);
             throw new Error('Period must be a positive number');
         }
-        if (period > match.maxPeriods) {
+        const maxPeriods = match.maxPeriods || 2;
+        if (period > maxPeriods) {
             res.status(400);
-            throw new Error(`Period cannot exceed ${match.maxPeriods}`);
+            throw new Error(`Period cannot exceed ${maxPeriods}`);
         }
-        match.period = period;
+        match.period = Math.floor(period);
     }
 
     // Auto-set to LIVE if updating scores

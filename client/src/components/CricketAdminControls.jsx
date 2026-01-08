@@ -54,13 +54,19 @@ const CricketAdminControls = ({ match, onUpdate }) => {
         });
     }, [battingSquad, currentBatsmen, match._id, squadA, squadB]);
 
-    // Get bowlers (all bowlers are available except current)
+    // Get all bowlers from bowling squad (including current bowler and those who have bowled)
+    // Show their bowling stats if they have any
     const availableBowlers = useMemo(() => {
         return bowlingSquad.filter(p => {
             const playerName = p.playerName || p.name;
-            const isCurrentBowler = currentBowler?.playerName === playerName;
-            return !isCurrentBowler && playerName;
-        });
+            return playerName; // Show all bowlers with valid names
+        }).map(p => ({
+            ...p,
+            _id: p._id || p.playerId,
+            name: p.playerName || p.name,
+            playerName: p.playerName || p.name,
+            isCurrentBowler: currentBowler?.playerName === (p.playerName || p.name)
+        }));
     }, [bowlingSquad, currentBowler, match._id, squadA, squadB]);
 
     const dismissalTypes = [
@@ -538,20 +544,29 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => handleSelectBowler(player)}
                                             disabled={loading === 'select-bowler'}
-                                            className="w-full p-4 bg-slate-800 hover:bg-blue-900/50 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-left transition-colors border border-slate-700 hover:border-blue-500"
+                                            className={`w-full p-4 ${
+                                                player.isCurrentBowler 
+                                                    ? 'bg-green-900/50 border-green-500' 
+                                                    : 'bg-slate-800 hover:bg-blue-900/50 border-slate-700 hover:border-blue-500'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-left transition-colors border`}
                                         >
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-white font-bold">
                                                         {player.name || player.playerName}
                                                     </span>
+                                                    {player.isCurrentBowler && (
+                                                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                                                            Current
+                                                        </span>
+                                                    )}
                                                     {loading === 'select-bowler' && (
                                                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                                     )}
                                                 </div>
-                                                {player.oversBowled > 0 && (
+                                                {(player.oversBowled > 0 || player.ballsBowled > 0) && (
                                                     <span className="text-xs text-slate-400 font-mono">
-                                                        {player.oversBowled}-{player.maidens || 0}-{player.runsConceded || 0}-{player.wicketsTaken || 0}
+                                                        {player.oversBowled || 0}-{player.maidens || 0}-{player.runsConceded || 0}-{player.wicketsTaken || 0}
                                                     </span>
                                                 )}
                                             </div>
@@ -560,7 +575,7 @@ const CricketAdminControls = ({ match, onUpdate }) => {
                                 </div>
                             ) : (
                                 <div className="text-center text-slate-500 py-8">
-                                    No bowlers available
+                                    No bowlers available. Please add squad members first.
                                 </div>
                             )}
 

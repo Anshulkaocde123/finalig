@@ -353,67 +353,107 @@ const LiveConsole = () => {
                 variant="danger"
             />
 
-            {/* Scoring Modal */}
+            {/* Full Page Scoring View */}
             {selectedMatch && (
                 <div 
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto"
-                    onClick={() => setSelectedMatch(null)}
+                    className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 z-50 overflow-y-auto"
                 >
-                    <div 
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/10 my-auto"
-                    >
-                            <div className="sticky top-0 bg-slate-900/95 backdrop-blur-xl p-4 sm:p-6 border-b border-white/10 flex justify-between items-start sm:items-center gap-3 z-10">
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-lg sm:text-xl font-black text-white">Score Management</h3>
-                                    <p className="text-sm font-semibold sm:text-sm text-gray-700 mt-1 truncate">
-                                        {selectedMatch.sport.replace('_', ' ')} • {selectedMatch.teamA?.shortCode} vs {selectedMatch.teamB?.shortCode}
-                                    </p>
+                    <div className="min-h-screen w-full">
+                        {/* Header Bar - Fixed */}
+                        <div className="sticky top-0 bg-slate-900/98 backdrop-blur-xl border-b border-white/10 shadow-xl z-20">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+                                <div className="flex justify-between items-center gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white flex items-center gap-3">
+                                            <Radio className="w-6 h-6 sm:w-7 sm:h-7 text-red-500 animate-pulse" />
+                                            Live Score Management
+                                        </h2>
+                                        <p className="text-base sm:text-lg text-gray-400 mt-1 font-semibold">
+                                            {selectedMatch.sport.replace('_', ' ')} • {selectedMatch.teamA?.name} vs {selectedMatch.teamB?.name}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedMatch(null)}
+                                        className="p-3 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors border border-red-500/30 hover:border-red-500/50 flex-shrink-0"
+                                    >
+                                        <X className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
+                                    </button>
                                 </div>
-                                <button
-
-                                    onClick={() => setSelectedMatch(null)}
-                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-lg sm:rounded-xl transition-colors flex-shrink-0 touch-manipulation"
-                                >
-                                    <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                                </button>
                             </div>
+                        </div>
 
-                            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                                {/* Live Scoreboard Preview */}
-                                <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10">
+                        {/* Main Content Area - Full Width */}
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                            <div className="space-y-6 sm:space-y-8">
+                                {/* Live Scoreboard Preview - Large Display */}
+                                <div className="bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-pink-600/20 rounded-2xl sm:rounded-3xl border border-white/20 shadow-2xl p-6 sm:p-8">
                                     <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800 uppercase tracking-wider mb-1 sm:mb-2">Current Score</div>
-                                        <div className="text-2xl sm:text-3xl md:text-4xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                                        <div className="text-sm sm:text-base font-bold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4">Live Score</div>
+                                        <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-tight">
                                             {formatScore(selectedMatch)}
+                                        </div>
+                                        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 rounded-full border border-red-500/30">
+                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                                            <span className="text-red-400 text-sm font-bold uppercase tracking-wide">Live</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Cricket Advanced Scorecard */}
+                                {/* Cricket Advanced Scorecard - Full Width */}
                                 {selectedMatch.sport === 'CRICKET' && (
-                                    <>
-                                        <ProfessionalCricketScorecard match={selectedMatch} />
+                                    <div className="space-y-6">
+                                        <CricketScoreboard match={selectedMatch} isAdmin={true} />
                                         <ScoringControls
                                             match={selectedMatch}
                                             onUpdate={handleScoreUpdate}
                                             onTimerAction={handleTimerAction}
                                             onAddFoul={handleAddFoul}
                                             onRemoveFoul={handleRemoveFoul}
+                                            onSetToss={handleSetToss}
                                         />
-                                    </>
+                                    </div>
                                 )}
 
-                                {/* Badminton Enhanced Controls */}
+                                {/* Badminton Enhanced Controls - Full Width */}
                                 {selectedMatch.sport === 'BADMINTON' && (
-                                    <>
+                                    <div className="space-y-6">
                                         <BadmintonScoreboard match={selectedMatch} />
                                         <BadmintonAdminControls match={selectedMatch} onUpdate={handleScoreUpdate} />
-                                    </>
+                                    </div>
                                 )}
 
-                                {/* Default Scoring Controls for other sports */}
-                                {selectedMatch.sport !== 'BADMINTON' && selectedMatch.sport !== 'CRICKET' && (
+                                {/* Football/Hockey Scoreboard - Full Width */}
+                                {['FOOTBALL', 'HOCKEY'].includes(selectedMatch.sport) && (
+                                    <div className="space-y-6">
+                                        <FootballScoreboard match={selectedMatch} isAdmin={true} />
+                                        <ScoringControls
+                                            match={selectedMatch}
+                                            onUpdate={handleScoreUpdate}
+                                            onTimerAction={handleTimerAction}
+                                            onAddFoul={handleAddFoul}
+                                            onRemoveFoul={handleRemoveFoul}
+                                            onSetToss={handleSetToss}
+                                        />
+                                        
+                                        {/* Enhanced Foul System */}
+                                        <EnhancedFoulSystem
+                                            match={selectedMatch}
+                                            onAddFoul={handleAddFoul}
+                                            onRemoveFoul={handleRemoveFoul}
+                                            disabled={selectedMatch.status !== 'LIVE'}
+                                        />
+                                        
+                                        {/* Penalty Shootout */}
+                                        <PenaltyShootout
+                                            match={selectedMatch}
+                                            onUpdate={handleScoreUpdate}
+                                            disabled={selectedMatch.status === 'COMPLETED'}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Default Scoring Controls for other sports - Full Width */}
+                                {!['BADMINTON', 'CRICKET', 'FOOTBALL', 'HOCKEY'].includes(selectedMatch.sport) && (
                                     <ScoringControls
                                         match={selectedMatch}
                                         onUpdate={handleScoreUpdate}
@@ -423,41 +463,33 @@ const LiveConsole = () => {
                                         onSetToss={handleSetToss}
                                     />
                                 )}
-                                
-                                {/* Enhanced Foul System for Football/Hockey */}
-                                {['FOOTBALL', 'HOCKEY'].includes(selectedMatch.sport) && (
-                                    <EnhancedFoulSystem
-                                        match={selectedMatch}
-                                        onAddFoul={handleAddFoul}
-                                        onRemoveFoul={handleRemoveFoul}
-                                        disabled={selectedMatch.status !== 'LIVE'}
-                                    />
-                                )}
-                                
-                                {/* Penalty Shootout for Football/Hockey */}
-                                {['FOOTBALL', 'HOCKEY'].includes(selectedMatch.sport) && (
-                                    <PenaltyShootout
-                                        match={selectedMatch}
-                                        onUpdate={handleScoreUpdate}
-                                        disabled={selectedMatch.status === 'COMPLETED'}
-                                    />
-                                )}
 
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-3 sm:pt-4 border-t border-white/10">
-                                    <span className="text-sm font-semibold text-gray-500">Changes saved instantly via Socket.io</span>
-                                    <button
-
-                                        onClick={() => handleEndMatch(selectedMatch)}
-                                        className="px-3 sm:px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-lg sm:rounded-xl font-bold text-sm shadow-lg shadow-green-500/25 w-full sm:w-auto touch-manipulation"
-                                    >
-                                        Complete Match
-                                    </button>
+                                {/* Footer Actions */}
+                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-white/10">
+                                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                        <span className="font-semibold">Changes saved instantly via Socket.io</span>
+                                    </div>
+                                    <div className="flex gap-3 w-full sm:w-auto">
+                                        <button
+                                            onClick={() => setSelectedMatch(null)}
+                                            className="flex-1 sm:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold text-sm border border-white/10 transition-all"
+                                        >
+                                            Close
+                                        </button>
+                                        <button
+                                            onClick={() => handleEndMatch(selectedMatch)}
+                                            className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-500/25 transition-all"
+                                        >
+                                            Complete Match
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                )}
-            
+                </div>
+            )}
 
             {/* Squad Manager Modal */}
             {squadManagerMatch && (
