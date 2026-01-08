@@ -10,7 +10,8 @@ const AdminLayout = () => {
     const [currentUser, setCurrentUser] = useState(null);
 
     // Check authentication and role
-    useEffect(() => {        const checkAuth = () => {
+    useEffect(() => {
+        const checkAuth = () => {
             const token = localStorage.getItem('adminToken');
             const userStr = localStorage.getItem('adminUser');
             

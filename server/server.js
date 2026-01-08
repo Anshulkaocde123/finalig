@@ -29,9 +29,6 @@ const adminRoutes = require('./routes/adminRoutes');
 const playerRoutes = require('./routes/playerRoutes');
 const foulRoutes = require('./routes/foulRoutes');
 
-console.log('🔄 Starting VNIT IG App Server...');
-console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-
 // Connect to MongoDB asynchronously - don't block server startup
 console.log('🔄 Initiating MongoDB connection in background...');
 connectDB()
