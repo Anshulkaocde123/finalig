@@ -41,7 +41,20 @@ This guide will teach you **MERN Stack Development** from scratch using YOUR OWN
 - Understanding Express.js
 - Middleware Concept
 - Controllers and Business Logic
-- Line-by-Line Code Breakdown 
+- Line-by-Line Code Breakdown
+
+### **Chapter 3A: Backend Explained - Complete Beginner's Guide** ⭐ NEW!
+📄 File: `03A-BACKEND-COMPLETE-GUIDE.md`
+- What "Backend" Actually Means (Restaurant Analogy)
+- Why We Need Backend (Security, Business Logic, Data Persistence)
+- Node.js Explained (JavaScript in Browser vs Server)
+- Express.js vs Raw Node.js
+- MongoDB and Databases (SQL vs NoSQL)
+- Mongoose Schema Line-by-Line
+- Complete Backend Architecture Diagram
+- **Every terminology defined**
+- **Line-by-line code explanations**
+
 ### **Chapter 4: Database Concepts**
 📄 File: `04-DATABASE-CONCEPTS.md`
 - What is MongoDB?
@@ -59,6 +72,19 @@ This guide will teach you **MERN Stack Development** from scratch using YOUR OWN
 - Creating Routes in Your Project
 - Route Parameters and Query Strings
 - How Frontend Connects to Routes
+
+### **Chapter 5A: APIs Explained from Zero to Hero** ⭐ NEW!
+📄 File: `05A-APIS-COMPLETE-GUIDE.md`
+- What an API Actually Is (Restaurant Analogy)
+- How APIs Work (Request-Response Cycle)
+- HTTP Methods Deep Dive (GET, POST, PUT, PATCH, DELETE)
+- Status Codes Explained (200, 201, 400, 401, 404, 500)
+- Headers, Body, Query Parameters Line-by-Line
+- RESTful API Design Principles
+- Building APIs with Express.js
+- Complete Event Flow Diagram
+- **Every terminology defined**
+- **Line-by-line code examples**
 
 ### **Chapter 6: React Frontend Fundamentals**
 📄 File: `06-REACT-FUNDAMENTALS.md`
@@ -91,15 +117,30 @@ This guide will teach you **MERN Stack Development** from scratch using YOUR OWN
 - Displaying Backend Data in UI
 - Forms and Data Submission
 
-### **Chapter 9: Environment Variables & Configuration**
-📄 File: `09-ENVIRONMENT-AND-CONFIG.md`
-- What are Environment Variables?
-- .env Files Explained
-- process.env Object
-- package.json Breakdown
-- Dependencies vs DevDependencies
-- Scripts Explained
-- Configuration Files
+### **Chapter 8A: Environment Variables & Configuration Explained** ⭐ NEW!
+📄 File: `08A-ENVIRONMENT-VARIABLES-GUIDE.md`
+- What Environment Variables Are (Secret Note Analogy)
+- Why We Use Them (Security, Flexibility, Different Environments)
+- Understanding process.env Line-by-Line
+- Using dotenv Library
+- .env File Format (Complete Syntax Rules)
+- Security Best Practices
+- Deployment Platform Variables
+- **Every terminology defined**
+- **Complete code examples**
+
+### **Chapter 9: Socket.io Real-Time Updates Explained** ⭐ NEW!
+📄 File: `09-SOCKET-IO-REAL-TIME.md`
+- What Real-Time Communication Means
+- HTTP vs WebSocket (Diagram Comparison)
+- What is Socket.io (Line-by-Line Setup)
+- Event-Driven Programming
+- Broadcasting to Multiple Users
+- Room-Based Communication
+- Real-Time Scoreboard Implementation
+- Complete Event Flow Diagram
+- **Every terminology defined**
+- **Line-by-line code explanations**
 
 ### **Chapter 10: Authentication & Security**
 📄 File: `10-AUTHENTICATION-SECURITY.md`
