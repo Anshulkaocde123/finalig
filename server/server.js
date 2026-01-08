@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression');
 
 // Load environment variables FIRST - before any other imports that need them
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -96,6 +97,9 @@ app.use(cors({
     origin: process.env.CORS_ORIGIN || '*',
     credentials: true
 }));
+
+// Compression middleware - reduces response size by ~70%
+app.use(compression());
 
 // Body parser middleware
 app.use(express.json());

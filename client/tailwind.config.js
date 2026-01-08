@@ -43,5 +43,15 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('daisyui')
+  ],
+  daisyui: {
+    themes: ["light", "dark", "corporate", "business"], // Professional themes only
+    darkTheme: "business", // Dark theme when enabled
+    base: true,
+    styled: true,
+    utils: true,
+    logs: false,
+  },
 }

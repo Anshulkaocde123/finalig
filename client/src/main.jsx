@@ -1,8 +1,10 @@
 import React, { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './mobile-optimizations.css'
 // Restored original App
 import App from './App.jsx'
+import { initPerformanceMonitoring } from './utils/performance'
 
 // Error boundary for debugging
 class ErrorBoundary extends Component {
@@ -28,6 +30,11 @@ class ErrorBoundary extends Component {
     }
     return this.props.children;
   }
+}
+
+// Enable performance monitoring in production
+if (import.meta.env.PROD) {
+  initPerformanceMonitoring();
 }
 
 createRoot(document.getElementById('root')).render(

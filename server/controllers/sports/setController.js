@@ -282,7 +282,17 @@ const updateScore = asyncHandler(async (req, res) => {
         
     const io = req.app.get('io');
     if (io) {
+        console.log('📡 Emitting matchUpdate (Set-based):', {
+            matchId: populatedMatch._id,
+            sport: populatedMatch.sport,
+            scoreA: populatedMatch.scoreA,
+            scoreB: populatedMatch.scoreB,
+            currentSet: populatedMatch.currentSet,
+            status: populatedMatch.status
+        });
         io.emit('matchUpdate', populatedMatch);
+    } else {
+        console.warn('⚠️ Socket.io not available - match update not broadcasted');
     }
 
     res.status(200).json({

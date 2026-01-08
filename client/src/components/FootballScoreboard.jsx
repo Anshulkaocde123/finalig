@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Circle, Radio, Award } from 'lucide-react';
 
 /**
  * Football/Basketball Scoreboard with Timer, Cards, and Scorers
@@ -76,14 +77,18 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                         className="absolute inset-0 flex items-center justify-center z-50"
                     >
                         <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
+                            initial={{ scale: 0, rotate: -90 }}
                             animate={{ scale: 1, rotate: 0 }}
-                            exit={{ scale: 0, rotate: 180 }}
+                            exit={{ scale: 0, rotate: 90 }}
                             transition={{ type: 'spring', stiffness: 200 }}
-                            className="bg-gradient-to-r from-green-500 to-emerald-600 px-12 py-8 rounded-2xl shadow-2xl"
+                            className="bg-green-600 px-12 py-8 rounded-lg shadow-2xl"
                         >
-                            <div className="text-6xl font-black text-white text-center">
-                                {isFootball ? '⚽ GOAL!' : '🏀 SCORE!'}
+                            <div className="text-6xl font-bold text-white text-center flex items-center gap-3">
+                                {isFootball ? (
+                                    <><Circle className="w-12 h-12" /> GOAL!</>
+                                ) : (
+                                    <><Circle className="w-12 h-12" /> SCORE!</>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>
@@ -91,16 +96,17 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
             </AnimatePresence>
 
             {/* Match Header with Timer */}
-            <div className="bg-gradient-to-r from-emerald-600 to-green-600 px-6 py-4">
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <span className="text-white font-bold">{getPeriodName()}</span>
+                        <span className="text-white font-semibold">{getPeriodName()}</span>
                         {status === 'LIVE' && (
                             <motion.span
-                                animate={{ opacity: [1, 0.5, 1] }}
-                                transition={{ duration: 1, repeat: Infinity }}
-                                className="px-2 py-0.5 bg-red-500 text-white text-sm font-semibold font-bold rounded-full"
+                                animate={{ opacity: [1, 0.6, 1] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                                className="px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded-md flex items-center gap-1"
                             >
+                                <Radio className="w-3 h-3" />
                                 LIVE
                             </motion.span>
                         )}
@@ -108,19 +114,19 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                     
                     {/* Match Timer */}
                     <motion.div 
-                        animate={match?.timer?.isRunning ? { opacity: [1, 0.7, 1] } : {}}
+                        animate={match?.timer?.isRunning ? { opacity: [1, 0.8, 1] } : {}}
                         transition={{ duration: 1, repeat: Infinity }}
-                        className="bg-black/30 px-4 py-2 rounded-lg"
+                        className="bg-black/30 px-4 py-2 rounded-md"
                     >
                         <span className="text-3xl font-mono font-bold text-white">
                             {formatTime(elapsedTime)}
                         </span>
                         {match?.timer?.addedTime > 0 && (
-                            <span className="text-yellow-400 text-sm ml-2">+{match.timer.addedTime}'</span>
+                            <span className="text-yellow-300 text-sm ml-2">+{match.timer.addedTime}'</span>
                         )}
                     </motion.div>
 
-                    <div className="text-white/80 text-sm">
+                    <div className="text-white/90 text-sm font-medium">
                         {match.matchCategory || 'Match'} • {sport}
                     </div>
                 </div>
@@ -128,9 +134,9 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
 
             {/* Toss Info */}
             {toss?.winner && (
-                <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-6 py-2 text-center">
-                    <span className="text-yellow-400 text-sm">
-                        🪙 {toss.winner?.shortCode || 'Team'} won the toss and chose to {toss.decision?.toLowerCase()}
+                <div className="bg-yellow-100 border-b border-yellow-200 px-6 py-2 text-center">
+                    <span className="text-yellow-700 text-sm font-medium">
+                        {toss.winner?.shortCode || 'Team'} won the toss and chose to {toss.decision?.toLowerCase()}
                     </span>
                 </div>
             )}
@@ -150,7 +156,7 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                         <h2 className="text-xl font-bold text-white mb-1">
                             {teamA?.shortCode || 'Team A'}
                         </h2>
-                        <span className="text-gray-700 text-sm">{teamA?.name}</span>
+                        <span className="text-gray-400 text-sm">{teamA?.name}</span>
                         
                         {/* Cards */}
                         <div className="flex justify-center gap-2 mt-2">
@@ -186,7 +192,7 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                             <div className="mt-4 grid grid-cols-4 gap-2 text-center">
                                 {match.periodScores?.map((ps, idx) => (
                                     <div key={idx} className="bg-gray-800/50 rounded px-2 py-1">
-                                        <div className="text-sm font-semibold text-gray-400">Q{ps.period}</div>
+                                        <div className="text-xs text-gray-400">Q{ps.period}</div>
                                         <div className="text-sm text-white">{ps.scoreA}-{ps.scoreB}</div>
                                     </div>
                                 ))}
@@ -206,7 +212,7 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                         <h2 className="text-xl font-bold text-white mb-1">
                             {teamB?.shortCode || 'Team B'}
                         </h2>
-                        <span className="text-gray-700 text-sm">{teamB?.name}</span>
+                        <span className="text-gray-400 text-sm">{teamB?.name}</span>
                         
                         {/* Cards */}
                         <div className="flex justify-center gap-2 mt-2">
@@ -237,11 +243,11 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                                     animate={{ opacity: 1, x: 0 }}
                                     className="flex items-center gap-2 text-sm"
                                 >
-                                    <span className="text-green-400">⚽</span>
+                                    <Circle className="w-4 h-4 text-green-500 fill-green-500" />
                                     <span className="text-white">{scorer.playerName}</span>
                                     <span className="text-gray-400">{scorer.time}'</span>
                                     {scorer.type === 'PENALTY' && (
-                                        <span className="text-sm font-semibold bg-yellow-500/20 text-yellow-400 px-1 rounded">P</span>
+                                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-1 rounded">P</span>
                                     )}
                                 </motion.div>
                             ))}
@@ -255,11 +261,11 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                                     className="flex items-center gap-2 text-sm justify-end"
                                 >
                                     {scorer.type === 'PENALTY' && (
-                                        <span className="text-sm font-semibold bg-yellow-500/20 text-yellow-400 px-1 rounded">P</span>
+                                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-1 rounded">P</span>
                                     )}
                                     <span className="text-gray-400">{scorer.time}'</span>
                                     <span className="text-white">{scorer.playerName}</span>
-                                    <span className="text-green-400">⚽</span>
+                                    <Circle className="w-4 h-4 text-green-500 fill-green-500" />
                                 </motion.div>
                             ))}
                         </div>
@@ -269,7 +275,7 @@ const FootballScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                 {/* Recent Fouls/Cards */}
                 {fouls.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-700">
-                        <div className="text-gray-700 text-sm mb-2">Recent Cards</div>
+                        <div className="text-gray-400 text-sm mb-2">Recent Cards</div>
                         <div className="flex flex-wrap gap-2">
                             {fouls.slice(-5).map((foul, idx) => (
                                 <div 

@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Target, Circle, Disc, Zap, Users, Flag, Grid3x3, Trophy } from 'lucide-react';
 
-const MatchCard = ({ match, formatIST, isDarkMode }) => {
+const MatchCard = ({ match, formatIST }) => {
     const navigate = useNavigate();
 
     const getLogoUrl = (logoPath) => {
@@ -78,18 +79,19 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
     const teamB = match.teamB || {};
 
     const getSportIcon = (sport) => {
-        const icons = {
-            CRICKET: '🏏',
-            FOOTBALL: '⚽',
-            BASKETBALL: '🏀',
-            VOLLEYBALL: '🏐',
-            BADMINTON: '🏸',
-            TABLE_TENNIS: '🏓',
-            KHOKHO: '🏃',
-            KABADDI: '🤼',
-            CHESS: '♟️'
+        const iconMap = {
+            CRICKET: Target,
+            FOOTBALL: Circle,
+            BASKETBALL: Disc,
+            VOLLEYBALL: Circle,
+            BADMINTON: Zap,
+            TABLE_TENNIS: Circle,
+            KHOKHO: Flag,
+            KABADDI: Users,
+            CHESS: Grid3x3
         };
-        return icons[sport] || '🏆';
+        const Icon = iconMap[sport] || Trophy;
+        return <Icon className="w-5 h-5" />;
     };
 
     // Team Logo/Avatar Component
@@ -103,16 +105,10 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                     <img 
                         src={getLogoUrl(team.logo)} 
                         alt={team.shortCode}
-                        className={`w-14 h-14 object-contain rounded-2xl p-1.5 ${
-                            isDarkMode ? 'bg-white/10' : 'bg-gray-100'
-                        }`}
+                        className="w-14 h-14 object-contain rounded-xl p-1.5 bg-gray-50 border border-gray-200"
                     />
                 ) : (
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black ${
-                        isDarkMode 
-                            ? 'bg-gradient-to-br from-white/10 to-white/5 text-white' 
-                            : 'bg-gradient-to-br from-gray-100 to-gray-50 text-gray-600'
-                    }`}>
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center text-xl font-bold bg-gradient-to-br from-gray-100 to-gray-50 text-gray-700 border border-gray-200">
                         {team.shortCode?.charAt(0) || '?'}
                     </div>
                 )}
@@ -121,17 +117,17 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                     <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-sm font-semibold shadow-lg"
+                        className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg"
                     >
-                        👑
+                        <Trophy className="w-3 h-3 text-white" />
                     </motion.div>
                 )}
             </motion.div>
             <div className={isReversed ? 'text-right' : 'text-left'}>
-                <div className={`font-black text-lg tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="font-bold text-lg tracking-tight text-gray-900">
                     {team.shortCode || 'TBD'}
                 </div>
-                <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                <div className="text-xs font-medium text-gray-500">
                     {team.name || ''}
                 </div>
             </div>
@@ -147,14 +143,10 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                 match.status === 'LIVE' ? config.glow : ''
             }`}
         >
-            {/* Glassmorphism Card */}
-            <div className={`relative p-6 rounded-3xl backdrop-blur-xl border ${config.border} ${
-                isDarkMode 
-                    ? 'bg-white/5 hover:bg-white/[0.08]' 
-                    : 'bg-white/80 hover:bg-white shadow-lg'
-            }`}>
+            {/* Professional Card */}
+            <div className={`relative p-6 rounded-xl bg-white border ${config.border} hover:shadow-xl transition-all`}>
                 {/* Background gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-r ${config.gradient} rounded-3xl pointer-events-none`} />
+                <div className={`absolute inset-0 bg-gradient-to-r ${config.gradient} rounded-xl pointer-events-none`} />
                 
                 {/* Live pulse effect */}
                 {match.status === 'LIVE' && (
@@ -169,21 +161,19 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                     {/* Header Row - Sport & Status */}
                     <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-3">
-                            <motion.span 
+                            <motion.div 
                                 whileHover={{ rotate: 20 }}
-                                className="text-2xl"
+                                className="text-blue-600"
                             >
                                 {getSportIcon(match.sport)}
-                            </motion.span>
+                            </motion.div>
                             <div>
-                                <span className={`text-xs font-bold uppercase tracking-widest ${
-                                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                                }`}>
+                                <span className="text-xs font-bold uppercase tracking-wide text-gray-600">
                                     {match.sport?.replace('_', ' ')}
                                 </span>
                                 {match.venue && (
-                                    <div className={`text-xs ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                                        📍 {match.venue}
+                                    <div className="text-xs text-gray-500">
+                                        {match.venue}
                                     </div>
                                 )}
                             </div>
@@ -218,7 +208,7 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                                 <motion.div 
                                     animate={{ scale: [1, 1.1, 1] }}
                                     transition={{ duration: 2, repeat: Infinity }}
-                                    className={`text-2xl font-black ${isDarkMode ? 'text-gray-600' : 'text-gray-300'}`}
+                                    className="text-2xl font-bold text-gray-300"
                                 >
                                     VS
                                 </motion.div>
@@ -229,26 +219,26 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                                             <motion.div 
                                                 key={score.teamA}
                                                 initial={{ scale: 1.2, color: '#22c55e' }}
-                                                animate={{ scale: 1, color: isDarkMode ? '#fff' : '#111' }}
-                                                className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                                animate={{ scale: 1, color: '#111' }}
+                                                className="text-2xl font-bold text-gray-900"
                                             >
                                                 {score.teamA}
                                             </motion.div>
-                                            <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                            <div className="text-xs font-medium text-gray-500">
                                                 {score.teamAExtra}
                                             </div>
                                         </div>
-                                        <span className={`text-sm font-bold ${isDarkMode ? 'text-gray-700' : 'text-gray-300'}`}>—</span>
+                                        <span className="text-sm font-bold text-gray-300">—</span>
                                         <div>
                                             <motion.div 
                                                 key={score.teamB}
                                                 initial={{ scale: 1.2, color: '#22c55e' }}
-                                                animate={{ scale: 1, color: isDarkMode ? '#fff' : '#111' }}
-                                                className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                                animate={{ scale: 1, color: '#111' }}
+                                                className="text-2xl font-bold text-gray-900"
                                             >
                                                 {score.teamB}
                                             </motion.div>
-                                            <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                            <div className="text-xs font-medium text-gray-500">
                                                 {score.teamBExtra}
                                             </div>
                                         </div>
@@ -260,16 +250,16 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                                         key={score.teamA}
                                         initial={{ scale: 1.3 }}
                                         animate={{ scale: 1 }}
-                                        className={`text-4xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                        className="text-4xl font-bold text-gray-900"
                                     >
                                         {score.teamA}
                                     </motion.span>
-                                    <span className={`text-xl font-bold ${isDarkMode ? 'text-gray-700' : 'text-gray-300'}`}>—</span>
+                                    <span className="text-xl font-bold text-gray-300">—</span>
                                     <motion.span 
                                         key={score.teamB}
                                         initial={{ scale: 1.3 }}
                                         animate={{ scale: 1 }}
-                                        className={`text-4xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                        className="text-4xl font-bold text-gray-900"
                                     >
                                         {score.teamB}
                                     </motion.span>
@@ -292,14 +282,12 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className={`mt-5 pt-4 border-t flex items-center justify-center gap-6 flex-wrap ${
-                                    isDarkMode ? 'border-white/10' : 'border-gray-200'
-                                }`}
+                                className="mt-5 pt-4 border-t flex items-center justify-center gap-6 flex-wrap border-gray-200"
                             >
                                 {/* Toss Info */}
                                 {match.toss?.winner && (
-                                    <div className={`text-xs font-medium ${isDarkMode ? 'text-yellow-500/80' : 'text-yellow-600'}`}>
-                                        🪙 {(() => {
+                                    <div className="text-xs font-medium text-yellow-600">
+                                        {(() => {
                                             const tossWinnerId = match.toss.winner?._id?.toString() || match.toss.winner?.toString();
                                             const teamAId = teamA?._id?.toString();
                                             return tossWinnerId === teamAId ? teamA.shortCode : teamB.shortCode;
@@ -311,12 +299,12 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                                 {(match.cardsA?.yellow > 0 || match.cardsA?.red > 0 || match.cardsB?.yellow > 0 || match.cardsB?.red > 0) && (
                                     <div className="flex gap-4 text-xs">
                                         {(match.cardsA?.yellow > 0 || match.cardsA?.red > 0) && (
-                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                                            <span className="text-gray-600">
                                                 {teamA.shortCode}: {match.cardsA?.yellow > 0 && `🟨${match.cardsA.yellow}`} {match.cardsA?.red > 0 && `🟥${match.cardsA.red}`}
                                             </span>
                                         )}
                                         {(match.cardsB?.yellow > 0 || match.cardsB?.red > 0) && (
-                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                                            <span className="text-gray-600">
                                                 {teamB.shortCode}: {match.cardsB?.yellow > 0 && `🟨${match.cardsB.yellow}`} {match.cardsB?.red > 0 && `🟥${match.cardsB.red}`}
                                             </span>
                                         )}
@@ -328,9 +316,10 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
                                     <motion.div 
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        className={`text-sm font-bold ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
+                                        className="flex items-center gap-2 text-sm font-bold text-emerald-600"
                                     >
-                                        🏆 {match.winner.shortCode || match.winner.name} wins!
+                                        <Trophy className="w-4 h-4" />
+                                        {match.winner.shortCode || match.winner.name} wins!
                                     </motion.div>
                                 )}
                             </motion.div>

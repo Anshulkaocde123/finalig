@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import AdminLayout from './components/AdminLayout';
 import Departments from './pages/admin/Departments';
 import ScheduleMatch from './pages/admin/ScheduleMatch';
@@ -23,6 +24,13 @@ import './App.css';
 import Dashboard from './pages/admin/Dashboard';
 
 function App() {
+  // Professional light theme only - dark mode removed for better visibility
+  useEffect(() => {
+    // Ensure dark class is never applied
+    document.documentElement.classList.remove('dark');
+    localStorage.removeItem('darkMode');
+  }, []);
+
   return (
     <Router>
       <Routes>

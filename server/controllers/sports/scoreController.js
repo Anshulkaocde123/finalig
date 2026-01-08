@@ -102,6 +102,12 @@ const updateScore = asyncHandler(async (req, res) => {
 
         const io = req.app.get('io');
         if (io) {
+            console.log('📡 Emitting matchUpdate (Penalty Shootout):', {
+                matchId: populatedMatch._id,
+                sport: populatedMatch.sport,
+                shootoutStatus: penaltyShootout.status,
+                winner: penaltyShootout.winner
+            });
             io.emit('matchUpdate', populatedMatch);
         }
 
@@ -131,8 +137,11 @@ const updateScore = asyncHandler(async (req, res) => {
             .populate('teamB', 'name shortCode logo');
 
         const io = req.app.get('io');
-        if (io) {
-            io.emit('matchUpdate', populatedMatch);
+        if (io) {            console.log('📡 Emitting matchUpdate (Toss):', {
+                matchId: populatedMatch._id,
+                sport: populatedMatch.sport,
+                tossWinner: match.toss.winner
+            });            io.emit('matchUpdate', populatedMatch);
         }
 
         return res.json({
@@ -183,6 +192,14 @@ const updateScore = asyncHandler(async (req, res) => {
 
         const io = req.app.get('io');
         if (io) {
+            console.log('📡 Emitting matchUpdate (Timer):', {
+                matchId: populatedMatch._id,
+                sport: populatedMatch.sport,
+                timerAction,
+                isRunning: match.timer.isRunning,
+                isPaused: match.timer.isPaused,
+                elapsed: match.timer.elapsedSeconds
+            });
             io.emit('matchUpdate', populatedMatch);
         }
 
@@ -263,7 +280,17 @@ const updateScore = asyncHandler(async (req, res) => {
         
     const io = req.app.get('io');
     if (io) {
+        console.log('📡 Emitting matchUpdate (Score):', {
+            matchId: populatedMatch._id,
+            sport: populatedMatch.sport,
+            scoreA: populatedMatch.scoreA,
+            scoreB: populatedMatch.scoreB,
+            period: populatedMatch.period,
+            status: populatedMatch.status
+        });
         io.emit('matchUpdate', populatedMatch);
+    } else {
+        console.warn('⚠️ Socket.io not available - match update not broadcasted');
     }
 
     res.status(200).json({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Target, Trophy, TrendingUp, Flame, Sparkles, ThumbsUp } from 'lucide-react';
 
 /**
  * Professional Cricket Scoreboard Component
@@ -69,22 +70,30 @@ const CricketScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                                 rotate: showAnimation === 'SIX' ? [0, 360] : 0 
                             }}
                             transition={{ duration: 0.5 }}
-                            className={`text-6xl font-black ${
+                            className={`flex items-center gap-3 text-6xl font-bold ${
                                 showAnimation === 'SIX' ? 'text-yellow-400' :
                                 showAnimation === 'FOUR' ? 'text-green-400' :
                                 'text-white'
                             }`}
                         >
-                            {showAnimation === 'SIX' && '🔥 SIX! 🔥'}
-                            {showAnimation === 'FOUR' && '💫 FOUR! 💫'}
-                            {showAnimation === 'RUN' && '👍'}
+                            {showAnimation === 'SIX' && (
+                                <>
+                                    <Flame className="w-16 h-16" /> SIX! <Flame className="w-16 h-16" />
+                                </>
+                            )}
+                            {showAnimation === 'FOUR' && (
+                                <>
+                                    <Sparkles className="w-16 h-16" /> FOUR! <Sparkles className="w-16 h-16" />
+                                </>
+                            )}
+                            {showAnimation === 'RUN' && <ThumbsUp className="w-16 h-16" />}
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* Match Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <span className="text-white/80 text-sm">
@@ -110,7 +119,7 @@ const CricketScoreboard = ({ match, onUpdate, isAdmin = false }) => {
             {toss?.winner && (
                 <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-6 py-2 text-center">
                     <span className="text-yellow-400 text-sm">
-                        🪙 {toss.winner?.shortCode || 'Team'} won the toss and chose to {toss.decision?.toLowerCase()}
+                        {toss.winner?.shortCode || 'Team'} won the toss and chose to {toss.decision?.toLowerCase()}
                     </span>
                 </div>
             )}
@@ -208,7 +217,7 @@ const CricketScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                                 >
                                     <div className="flex items-center gap-3">
                                         {batsman?.isOnStrike && (
-                                            <span className="text-green-400 text-xl">🏏</span>
+                                            <Target className="w-5 h-5 text-green-400" />
                                         )}
                                         <span className="text-white font-medium">
                                             {batsman?.playerName || 'Batsman'}
@@ -236,7 +245,7 @@ const CricketScoreboard = ({ match, onUpdate, isAdmin = false }) => {
                         <div className="text-gray-700 text-sm mb-3">Bowler</div>
                         <div className="flex justify-between items-center p-2 rounded-lg bg-gray-700/50">
                             <div className="flex items-center gap-3">
-                                <span className="text-blue-400 text-xl">🎯</span>
+                                <Target className="w-5 h-5 text-blue-400" />
                                 <span className="text-white font-medium">
                                     {currentBowler?.playerName || 'Bowler'}
                                 </span>

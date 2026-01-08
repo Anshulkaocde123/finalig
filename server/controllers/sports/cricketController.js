@@ -805,7 +805,23 @@ const updateScore = asyncHandler(async (req, res) => {
         const populatedMatch = await CricketMatch.findById(matchId)
             .populate('teamA', 'name shortCode logo')
             .populate('teamB', 'name shortCode logo');
+        
+        console.log('📡 Emitting matchUpdate (Cricket):', {
+            matchId: populatedMatch._id,
+            scoreA_runs: populatedMatch.scoreA?.runs,
+            scoreA_wickets: populatedMatch.scoreA?.wickets,
+            scoreA_overs: populatedMatch.scoreA?.overs,
+            scoreA_balls: populatedMatch.scoreA?.balls,
+            scoreB_runs: populatedMatch.scoreB?.runs,
+            scoreB_balls: populatedMatch.scoreB?.balls,
+            status: populatedMatch.status,
+            battingTeam: populatedMatch.battingTeam,
+            currentInnings: populatedMatch.currentInnings
+        });
+        
         io.emit('matchUpdate', populatedMatch);
+    } else {
+        console.warn('⚠️ Socket.io not available - cricket update not broadcasted');
     }
 
     res.status(200).json({

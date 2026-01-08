@@ -389,7 +389,7 @@ const LiveConsole = () => {
                                 {/* Badminton Enhanced Controls */}
                                 {selectedMatch.sport === 'BADMINTON' && (
                                     <>
-                                        <BadmintonScoreboard match={selectedMatch} isDarkMode={true} />
+                                        <BadmintonScoreboard match={selectedMatch} />
                                         <BadmintonAdminControls match={selectedMatch} onUpdate={handleScoreUpdate} />
                                     </>
                                 )}
