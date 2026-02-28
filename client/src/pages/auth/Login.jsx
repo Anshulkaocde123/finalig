@@ -81,7 +81,20 @@ const Login = () => {
                 navigate('/admin/dashboard', { replace: true });
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Invalid credentials');
+            const msg = error.response?.data?.message;
+            const hint = error.response?.data?.hint;
+            const status = error.response?.status;
+            
+            if (!error.response) {
+                // Network error - server not running or CORS issue
+                toast.error('Cannot reach server. Make sure backend is running on port 5000.');
+            } else if (status === 503) {
+                // Database not connected
+                toast.error(msg || 'Database not connected. Check server terminal.');
+                if (hint) console.warn('Hint:', hint);
+            } else {
+                toast.error(msg || 'Invalid credentials');
+            }
         } finally {
             setLoading(false);
         }

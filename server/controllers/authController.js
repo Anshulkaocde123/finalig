@@ -9,9 +9,25 @@ const login = async (req, res) => {
     try {
         const { username, password, studentId } = req.body;
 
+        // Check if database is connected
+        const mongoose = require('mongoose');
+        if (mongoose.connection.readyState !== 1) {
+            console.error('LOGIN FAILED: MongoDB not connected! readyState:', mongoose.connection.readyState);
+            return res.status(503).json({ 
+                message: 'Database not connected. Check server terminal for errors.',
+                hint: 'Your IP may not be whitelisted in MongoDB Atlas'
+            });
+        }
+
         // Support both username and studentId login
         const loginId = studentId || username;
         
+        if (!loginId || !password) {
+            return res.status(400).json({ message: 'Username and password are required' });
+        }
+
+        console.log('LOGIN attempt for:', loginId);
+
         const admin = await Admin.findOne({ 
             $or: [
                 { username: loginId },
@@ -21,11 +37,13 @@ const login = async (req, res) => {
         }).select('+password');
 
         if (!admin) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            console.log('LOGIN FAILED: No user found for:', loginId);
+            return res.status(401).json({ message: 'Invalid credentials - user not found' });
         }
 
         // Check if account is active
         if (!admin.isActive) {
+            console.log('LOGIN FAILED: Account suspended for:', loginId);
             return res.status(403).json({ 
                 message: 'Account suspended',
                 reason: admin.suspensionReason 
@@ -35,7 +53,8 @@ const login = async (req, res) => {
         // Verify password
         const isMatch = await admin.comparePassword(password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            console.log('LOGIN FAILED: Wrong password for:', loginId);
+            return res.status(401).json({ message: 'Invalid credentials - wrong password' });
         }
 
         // Update login stats
