@@ -42,19 +42,28 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize Socket.io with CORS and connection settings
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+  : ['http://localhost:5173'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, origin);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+
 const io = new Server(server, {
-    cors: {
-        origin: process.env.CORS_ORIGIN || '*',
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
-        credentials: true
-    },
-    transports: ['websocket', 'polling'],
-    connectTimeout: 45000,
-    pingInterval: 25000,
-    pingTimeout: 60000,
-    upgradeSide: ['server'],
-    perMessageDeflate: false,
-    allowUpgrades: true
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
 });
 
 // Make io accessible to routes/controllers
@@ -86,12 +95,6 @@ app.get('/api/socket-status', (req, res) => {
 // Security middleware
 // Temporarily disabled for debugging - helmet may be causing issues
 // app.use(helmet());
-
-// CORS middleware
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true
-}));
 
 // Compression middleware - reduces response size by ~70%
 app.use(compression());

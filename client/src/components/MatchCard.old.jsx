@@ -7,7 +7,7 @@ const MatchCard = ({ match, formatIST, isDarkMode }) => {
     const getLogoUrl = (logoPath) => {
         if (!logoPath) return null;
         if (logoPath.startsWith('http')) return logoPath;
-        return `http://localhost:5000${logoPath}`;
+        return `http://localhost:5001${logoPath}`;
     };
 
     const formatTime = (dateStr) => {

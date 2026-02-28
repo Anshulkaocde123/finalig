@@ -87,7 +87,7 @@ const Login = () => {
             
             if (!error.response) {
                 // Network error - server not running or CORS issue
-                toast.error('Cannot reach server. Make sure backend is running on port 5000.');
+                toast.error('Cannot reach server. Make sure backend is running on port 5001.');
             } else if (status === 503) {
                 // Database not connected
                 toast.error(msg || 'Database not connected. Check server terminal.');

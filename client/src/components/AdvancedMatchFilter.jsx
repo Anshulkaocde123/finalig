@@ -30,7 +30,7 @@ const AdvancedMatchFilter = ({ onFilter }) => {
         // Log every 5 seconds to see state changes
         const debugInterval = setInterval(() => {
             console.log('📊 Current state - Departments:', departments.length, 'Seasons:', seasons.length);
-        }, 5000);
+        }, 5001);
         
         return () => clearInterval(debugInterval);
     }, []);
