@@ -66,17 +66,63 @@ echo ""
 echo "📦 Installing client dependencies..."
 cd client && npm install && cd ..
 
-# ─── 4. Done! ────────────────────────────────────────────────
+# ─── 4. Seed admin account ──────────────────────────────────
+echo ""
+echo "🔧 Ensuring admin account exists in database..."
+cd server
+node -e "
+require('dotenv').config();
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+(async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        const db = mongoose.connection.db;
+        const admins = db.collection('admins');
+        const exists = await admins.findOne({ username: 'admin' });
+        if (!exists) {
+            const salt = await bcrypt.genSalt(10);
+            const hash = await bcrypt.hash('admin123', salt);
+            await admins.insertOne({
+                username: 'admin', studentId: '00000', email: 'admin@vnit.ac.in',
+                password: hash, name: 'VNIT Super Admin', provider: 'local',
+                verified: true, role: 'super_admin', isTrusted: true, isActive: true,
+                hierarchyLevel: 100, createdAt: new Date(), updatedAt: new Date()
+            });
+            console.log('  ✅ Admin account created (admin / admin123)');
+        } else {
+            console.log('  ✅ Admin account already exists');
+        }
+        await mongoose.disconnect();
+    } catch(e) {
+        console.log('');
+        console.log('  ❌ Could not connect to MongoDB!');
+        console.log('  Error: ' + e.message);
+        console.log('');
+        console.log('  👉 FIX: Ask Anshul to whitelist your IP in MongoDB Atlas');
+        console.log('     Or whitelist 0.0.0.0/0 (allow all) at:');
+        console.log('     https://cloud.mongodb.com → Network Access → Add IP');
+        process.exit(0);
+    }
+})();
+"
+cd ..
+
+# ─── 5. Done! ────────────────────────────────────────────────
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ SETUP COMPLETE!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "🚀 To start the app, run:"
+echo "🚀 To start the app:"
 echo "   npm start"
 echo ""
 echo "🌐 Then open:"
 echo "   Frontend → http://localhost:5173"
 echo "   Backend  → http://localhost:5000"
+echo ""
+echo "🔐 Admin Login:"
+echo "   Username: admin"
+echo "   Password: admin123"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
