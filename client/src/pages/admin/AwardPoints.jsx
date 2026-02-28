@@ -46,26 +46,26 @@ const AwardPoints = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 md:p-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 md:p-8">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-black text-white flex items-center gap-3">
-                    <Award className="w-8 h-8 text-yellow-500" />
+                <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                    <Award className="w-8 h-8 text-blue-500" />
                     Judge's Console
                 </h1>
-                <p className="text-gray-700 mt-1">Award points to departments for events and achievements</p>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">Award points to departments for events and achievements</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Form */}
                 <div className="lg:col-span-2">
-                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8">
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 md:p-8">
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Department */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Department <span className="text-red-400">*</span></label>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Department <span className="text-red-500">*</span></label>
                                 <select name="department" value={formData.department} onChange={handleChange} required
-                                    className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                                     <option value="">Select Department</option>
                                     {departments.map(dept => <option key={dept._id} value={dept._id}>{dept.name} ({dept.shortCode})</option>)}
                                 </select>
@@ -73,14 +73,14 @@ const AwardPoints = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Event Name <span className="text-red-400">*</span></label>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Event Name <span className="text-red-500">*</span></label>
                                     <input type="text" name="eventName" value={formData.eventName} onChange={handleChange} placeholder="e.g. Cricket Finals" required
-                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Category</label>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Category</label>
                                     <select name="category" value={formData.category} onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
                                         <option value="Sports">Sports</option>
                                         <option value="Cultural">Cultural</option>
                                         <option value="Literary">Literary</option>
@@ -93,9 +93,9 @@ const AwardPoints = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Position</label>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Position</label>
                                     <select name="position" value={formData.position} onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
                                         <option value="">Select Position</option>
                                         <option value="Winner">🥇 Winner (1st)</option>
                                         <option value="Runner-up">🥈 Runner-up (2nd)</option>
@@ -105,21 +105,21 @@ const AwardPoints = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Points <span className="text-red-400">*</span></label>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Points <span className="text-red-500">*</span></label>
                                     <input type="number" name="points" value={formData.points} onChange={handleChange} placeholder="e.g. 10, 25, -5" required
-                                        className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                                    <p className="text-sm font-semibold text-gray-800 mt-2">Use negative for deductions</p>
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Use negative for deductions</p>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Notes (Optional)</label>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes (Optional)</label>
                                 <textarea name="description" value={formData.description} onChange={handleChange} rows="2" placeholder="Additional notes..."
-                                    className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none resize-none" />
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
                             </div>
 
                             <button type="submit" disabled={loading}
-                                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-yellow-500/25 disabled:opacity-50">
+                                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold text-lg disabled:opacity-50 transition-colors">
                                 {loading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="w-5 h-5" />}
                                 {loading ? 'Awarding...' : 'Award Points'}
                             </button>
@@ -129,38 +129,37 @@ const AwardPoints = () => {
 
                 {/* Recent Logs */}
                 <div>
-                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6">
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2"><Clock className="w-5 h-5 text-indigo-400" /> Recent Awards</h3>
+                            <h3 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2"><Clock className="w-5 h-5 text-blue-500" /> Recent Awards</h3>
                             {recentLogs.length > 0 && (
-                                <button onClick={() => setShowClearConfirm(true)} className="p-2 text-gray-800 hover:text-red-400 transition-colors">
+                                <button onClick={() => setShowClearConfirm(true)} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             )}
                         </div>
                         {recentLogs.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
+                            <div className="text-center py-8 text-slate-400">
                                 <div className="text-3xl mb-2">📝</div>
                                 <p className="text-sm">No awards yet this session</p>
                             </div>
                         ) : (
                             <div className="space-y-3 max-h-[500px] overflow-y-auto">
                                 {recentLogs.map((log) => (
-                                    <div key={log.id || log._id} className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="font-bold text-white">{log.departmentName || log.department?.name}</div>
-                                                    <div className="text-sm text-gray-400">{log.eventName}</div>
-                                                    {log.position && <div className="text-sm font-semibold text-indigo-400 mt-1">📍 {log.position}</div>}
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className={`text-xl font-black ${log.points > 0 ? 'text-green-400' : 'text-red-400'}`}>{log.points > 0 ? '+' : ''}{log.points}</div>
-                                                    <div className="text-sm font-semibold text-gray-500">{formatTime(log.awardedAt)}</div>
-                                                </div>
+                                    <div key={log.id || log._id} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="font-semibold text-slate-800 dark:text-white">{log.departmentName || log.department?.name}</div>
+                                                <div className="text-sm text-slate-500 dark:text-slate-400">{log.eventName}</div>
+                                                {log.position && <div className="text-sm text-blue-500 mt-1">📍 {log.position}</div>}
+                                            </div>
+                                            <div className="text-right">
+                                                <div className={`text-xl font-bold ${log.points > 0 ? 'text-green-500' : 'text-red-500'}`}>{log.points > 0 ? '+' : ''}{log.points}</div>
+                                                <div className="text-sm text-slate-400">{formatTime(log.awardedAt)}</div>
                                             </div>
                                         </div>
-                                    ))}
-                                
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>

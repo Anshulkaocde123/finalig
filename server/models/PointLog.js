@@ -13,7 +13,7 @@ const pointLogSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ['Sports', 'Cultural', 'Literary', 'Arts', 'Other']
+        enum: ['Sports', 'Cultural', 'Literary', 'Technical', 'Arts', 'Other']
     },
     position: {
         type: String,

@@ -417,7 +417,7 @@ headers: {
 'Accept': 'application/json'
 
 // What it means:
-// "I want response in JSON format"
+// "I want response in JSON format" 
 
 // Other values:
 'Accept': 'text/html'      // Want HTML

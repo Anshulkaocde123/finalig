@@ -145,6 +145,79 @@ AdminSchema.methods.comparePassword = async function(enteredPassword) {
 
 ## Part 2: JWT Tokens
 
+# JWT (JSON Web Token) Components Breakdown
+
+A JWT (JSON Web Token) is a compact, URL-safe token used for securely transmitting information between parties as a JSON object. It is commonly used for authentication and authorization in web applications.
+
+A JWT consists of three main parts, separated by dots (`.`):
+
+```
+<Header>.<Payload>.<Signature>
+```
+
+### 1. Header
+- **Purpose:** Specifies the type of token and the signing algorithm used.
+- **Example:**
+  ```json
+  {
+    "alg": "HS256", // Algorithm used for signing (HMAC SHA-256)
+    "typ": "JWT"    // Token type (always "JWT")
+  }
+  ```
+- **Encoded:** Base64Url encoded to form the first part of the JWT.
+
+### 2. Payload
+- **Purpose:** Contains the claims (statements about an entity, typically the user) and any additional data.
+- **Common Claims:**
+  - `sub`: Subject (user ID)
+  - `iat`: Issued at (timestamp)
+  - `exp`: Expiration time (timestamp)
+  - `iss`: Issuer
+  - `aud`: Audience
+  - Custom claims (e.g., user roles, permissions)
+- **Example:**
+  ```json
+  {
+    "id": "6743c2d8...", // User/admin ID
+    "iat": 1736341200,    // Issued at (Unix timestamp)
+    "exp": 1738933200,    // Expiry (Unix timestamp)
+    "role": "admin",     // Custom claim: user role
+    "isTrusted": true     // Custom claim: trust status
+  }
+  ```
+- **Encoded:** Base64Url encoded to form the second part of the JWT.
+
+### 3. Signature
+- **Purpose:** Verifies that the token was not altered and was issued by a trusted source.
+- **How it's created:**
+  - The encoded header and payload are joined with a dot (`.`)
+  - This string is signed using a secret key and the algorithm specified in the header
+  - **Formula:**
+    ```
+    HMACSHA256(
+      base64UrlEncode(header) + "." + base64UrlEncode(payload),
+      secret
+    )
+    ```
+- **Result:** The signature is the third part of the JWT.
+
+### **Example JWT**
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NDNjMmQ4N2JkN2M4ZjljMTIzYWJjIiwiaWF0IjoxNzM2MzQxMjAwLCJleHAiOjE3Mzg5MzMyMDB9.abcd1234xyz...
+```
+- **First part:** Header (Base64Url encoded)
+- **Second part:** Payload (Base64Url encoded)
+- **Third part:** Signature (Base64Url encoded)
+
+### **Summary Table**
+| Part       | Description                | Example (Base64Url Encoded)         |
+|------------|---------------------------|-------------------------------------|
+| Header     | Token type & algorithm    | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9|
+| Payload    | Claims & user data        | eyJpZCI6IjY3NDNjMmQ4N2JkN2M4Zjlj... |
+| Signature  | Verifies token integrity  | abcd1234xyz...                      |
+
+---
+
 ### **What is JWT?**
 
 **JWT** = JSON Web Token

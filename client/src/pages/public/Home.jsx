@@ -1,350 +1,331 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../../api/axios';
 import socket from '../../socket';
 import PublicNavbar from '../../components/PublicNavbar';
 import MatchCard from '../../components/MatchCard';
+import { MatchCardSkeleton, HighlightSkeleton } from '../../components/SkeletonLoader';
+import { SPORT_ICONS, SPORTS } from '../../lib/constants';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, Film, Trophy, Sparkles, RefreshCw, ExternalLink } from 'lucide-react';
 
 const Home = () => {
     const [matches, setMatches] = useState([]);
-    const [departments, setDepartments] = useState([]);
+    const [highlights, setHighlights] = useState({});
     const [loading, setLoading] = useState(true);
-    const [isConnected, setIsConnected] = useState(false);
-    const [selectedDept, setSelectedDept] = useState('');
-    const [selectedSport, setSelectedSport] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
+    const [selectedSport, setSelectedSport] = useState('ALL');
+    const [selectedStatus, setSelectedStatus] = useState('ALL');
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const debounceRef = useRef(null);
 
-    const sports = ['CRICKET', 'FOOTBALL', 'BASKETBALL', 'VOLLEYBALL', 'BADMINTON', 'TABLE_TENNIS', 'KHOKHO', 'KABADDI', 'CHESS'];
-
-    const sportIcons = {
-        'CRICKET': '🏏',
-        'FOOTBALL': '⚽',
-        'BASKETBALL': '🏀',
-        'VOLLEYBALL': '🏐',
-        'BADMINTON': '🏸',
-        'TABLE_TENNIS': '🏓',
-        'KHOKHO': '🏃',
-        'KABADDI': '💪',
-        'CHESS': '♟️'
-    };
-
-    const formatIST = (dateStr) => {
-        if (!dateStr) return '';
-        return new Date(dateStr).toLocaleString('en-IN', {
-            timeZone: 'Asia/Kolkata',
-            day: 'numeric',
-            month: 'short',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
-    };
-
-    const sortMatches = (matchList) => {
-        return [...matchList].sort((a, b) => {
-            const priority = { 'LIVE': 0, 'SCHEDULED': 1, 'COMPLETED': 2 };
-            if (priority[a.status] !== priority[b.status]) {
-                return priority[a.status] - priority[b.status];
-            }
-            if (a.status === 'SCHEDULED') {
-                return new Date(a.scheduledAt) - new Date(b.scheduledAt);
-            }
-            return new Date(b.updatedAt) - new Date(a.updatedAt);
-        });
-    };
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async (isRefresh = false) => {
         try {
-            setLoading(true);
-            const [matchRes, deptRes] = await Promise.all([
+            if (isRefresh) setRefreshing(true);
+            else setLoading(true);
+
+            const [matchRes, highlightRes] = await Promise.all([
                 api.get('/matches'),
-                api.get('/departments')
+                api.get('/highlights/today').catch(() => ({ data: { data: {} } }))
             ]);
-            setMatches(sortMatches(matchRes.data.data || []));
-            setDepartments(deptRes.data.data || []);
-        } catch (error) {
-            console.error('Error fetching data:', error);
+
+            const matchData = matchRes.data.data || [];
+            matchData.sort((a, b) => {
+                const priority = { SCHEDULED: 0, COMPLETED: 1, CANCELLED: 2 };
+                if (priority[a.status] !== priority[b.status]) return priority[a.status] - priority[b.status];
+                return new Date(b.scheduledAt || 0) - new Date(a.scheduledAt || 0);
+            });
+
+            setMatches(matchData);
+            setHighlights(highlightRes.data?.data || {});
+            setLastUpdated(new Date());
+        } catch (err) {
+            console.error('Failed to load data', err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchData();
 
-        socket.on('connect', () => setIsConnected(true));
-        socket.on('disconnect', () => setIsConnected(false));
-
-        socket.on('matchUpdate', (updatedMatch) => {
-            console.log('📡 Match update received (Home):', {
-                matchId: updatedMatch._id,
-                sport: updatedMatch.sport,
-                scoreA: updatedMatch.scoreA?.runs,
-                scoreB: updatedMatch.scoreB?.runs,
-                balls: updatedMatch.scoreA?.balls
-            });
-            setMatches(prev => sortMatches(prev.map(m => m._id === updatedMatch._id ? updatedMatch : m)));
-        });
-
-        socket.on('matchDeleted', (matchId) => {
-            setMatches(prev => prev.filter(m => m._id !== matchId));
-        });
-
-        socket.on('matchCreated', (newMatch) => {
-            setMatches(prev => sortMatches([newMatch, ...prev]));
-        });
-
-        return () => {
-            socket.off('connect');
-            socket.off('disconnect');
-            socket.off('matchUpdate');
-            socket.off('matchDeleted');
-            socket.off('matchCreated');
+        // Debounce socket updates — coalesce rapid events into one refetch
+        const debouncedFetch = () => {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => fetchData(true), 600);
         };
-    }, []);
 
-    const filteredMatches = matches.filter(match => {
-        const matchesDept = selectedDept === '' ||
-            (match.teamA?._id === selectedDept) ||
-            (match.teamB?._id === selectedDept);
-        const matchesSport = selectedSport === '' || match.sport === selectedSport;
-        const matchesStatus = selectedStatus === '' || match.status === selectedStatus;
-        return matchesDept && matchesSport && matchesStatus;
-    });
+        const events = ['matchCreated', 'matchUpdate', 'matchDeleted', 'highlightCreated', 'highlightUpdated', 'highlightDeleted'];
+        events.forEach(e => socket.on(e, debouncedFetch));
+        return () => {
+            clearTimeout(debounceRef.current);
+            events.forEach(e => socket.off(e, debouncedFetch));
+        };
+    }, [fetchData]);
 
-    const liveCount = matches.filter(m => m.status === 'LIVE').length;
-    const upcomingCount = matches.filter(m => m.status === 'SCHEDULED').length;
-    const completedCount = matches.filter(m => m.status === 'COMPLETED').length;
+    const filteredMatches = useMemo(() => {
+        return matches.filter(m => {
+            if (selectedSport !== 'ALL' && m.sport !== selectedSport) return false;
+            if (selectedStatus !== 'ALL' && m.status !== selectedStatus) return false;
+            return true;
+        });
+    }, [matches, selectedSport, selectedStatus]);
 
-    const statCards = [
-        { 
-            key: 'LIVE', 
-            label: 'Live Now', 
-            count: liveCount, 
-            gradient: 'from-red-500 to-rose-600', 
-            bgGlow: 'bg-red-500/20',
-            icon: (
-                <div className="relative">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-75"></span>
-                    <span className="relative block w-3 h-3 rounded-full bg-red-500"></span>
-                </div>
-            )
-        },
-        { 
-            key: 'SCHEDULED', 
-            label: 'Upcoming', 
-            count: upcomingCount, 
-            gradient: 'from-blue-500 to-indigo-600', 
-            bgGlow: 'bg-blue-500/20',
-            icon: <span className="text-xl">📅</span>
-        },
-        { 
-            key: 'COMPLETED', 
-            label: 'Completed', 
-            count: completedCount, 
-            gradient: 'from-emerald-500 to-green-600', 
-            bgGlow: 'bg-emerald-500/20',
-            icon: <span className="text-xl">✓</span>
-        }
-    ];
+    const stats = useMemo(() => ({
+        total: matches.length,
+        scheduled: matches.filter(m => m.status === 'SCHEDULED').length,
+        completed: matches.filter(m => m.status === 'COMPLETED').length,
+        sports: [...new Set(matches.map(m => m.sport))].length
+    }), [matches]);
+
+    const reelOfDay = highlights.reelOfTheDay || null;
+    const picOfDay = highlights.picOfTheDay || null;
 
     return (
-        <div className="min-h-screen bg-gray-50 text-gray-900">
-            <div className="relative">
-                <PublicNavbar />
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
+            <PublicNavbar />
 
-                {/* Hero Section */}
-                <div className="relative py-20 px-6 text-center bg-white border-b-2 border-gray-600 shadow-md">
-                    <div className="relative">
-                        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-4">
-                            <span className="text-gray-900">VNIT</span>
-                            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent ml-4">
-                                Games
-                            </span>
-                        </h1>
-                        
-                        <p className="text-lg md:text-xl font-light max-w-lg mx-auto text-gray-600">
-                            Inter-Department Championship • Real-Time Scores
-                        </p>
-
-                        {/* Connection Status Badge */}
-                        <div className={`inline-flex items-center gap-3 mt-8 px-5 py-2.5 rounded-full text-sm font-medium border-2 shadow-sm ${
-                                isConnected
-                                    ? 'bg-green-50 text-green-700 border-green-300'
-                                    : 'bg-red-50 text-red-700 border-red-300'
-                            }`}>
-                            <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                            {isConnected ? 'Live Updates Active' : 'Reconnecting...'}
-                        </div>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
+                {/* Hero */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mb-8 pt-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium mb-3">
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                        Season 2025-26
                     </div>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                        VNIT Inter-Department
+                        <br className="sm:hidden" />
+                        {' '}<span className="text-blue-600">Games</span>
+                    </h1>
+                    <p className="text-slate-500 text-sm max-w-md mx-auto">
+                        Follow all the action from the inter-department sports championship
+                    </p>
+                </motion.div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-8">
+                    {[
+                        { label: 'Matches', value: stats.total, icon: '🏅', color: 'from-blue-500 to-blue-600' },
+                        { label: 'Upcoming', value: stats.scheduled, icon: '📅', color: 'from-amber-500 to-amber-600' },
+                        { label: 'Results', value: stats.completed, icon: '✅', color: 'from-emerald-500 to-emerald-600' },
+                        { label: 'Sports', value: stats.sports, icon: '🎯', color: 'from-purple-500 to-purple-600' }
+                    ].map((stat, i) => (
+                        <motion.div key={stat.label}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.08 }}
+                            className="relative overflow-hidden bg-white border border-slate-200 rounded-xl p-3 sm:p-4 text-center hover:shadow-md transition-shadow">
+                            <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stat.color}`} />
+                            <div className="text-lg sm:text-xl mb-0.5">{stat.icon}</div>
+                            <div className="text-xl sm:text-2xl font-bold text-slate-900">{loading ? '-' : stat.value}</div>
+                            <div className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wide">{stat.label}</div>
+                        </motion.div>
+                    ))}
                 </div>
 
-                {/* Stats Cards */}
-                <div className="max-w-5xl mx-auto px-4 -mt-10">
-                    <div className="grid grid-cols-3 gap-4 md:gap-6">
-                        {statCards.map((stat) => (
-                            <button
-                                key={stat.key}
-                                onClick={() => setSelectedStatus(selectedStatus === stat.key ? '' : stat.key)}
-                                className={`relative p-6 md:p-8 rounded-2xl transition-all duration-200 text-center border-2 shadow-lg hover:shadow-xl ${
-                                    selectedStatus === stat.key
-                                        ? `bg-gradient-to-br ${stat.gradient} text-white border-transparent shadow-xl`
-                                        : 'bg-white hover:bg-gray-50 border-gray-200'
-                                }`}
-                            >
-                                <div className="relative">
-                                    <div className="flex justify-center mb-3">
-                                        {stat.icon}
-                                    </div>
-                                    <div className="text-4xl md:text-5xl font-black">
-                                        {stat.count}
-                                    </div>
-                                    <div className={`text-xs font-bold uppercase tracking-widest mt-2 ${
-                                        selectedStatus === stat.key 
-                                            ? 'text-white/90' 
-                                            : 'text-gray-500'
-                                    }`}>
-                                        {stat.label}
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Filters */}
-                <div className="max-w-5xl mx-auto px-4 mt-10">
-                    <div className="flex flex-wrap gap-4 p-6 rounded-2xl bg-white shadow-lg border-2 border-gray-200">
-                        <div className="relative flex-1 min-w-[140px]">
-                            <label className="block text-sm font-semibold font-bold uppercase tracking-wider mb-1.5 text-gray-700">Department</label>
-                            <select
-                                value={selectedDept}
-                                onChange={(e) => setSelectedDept(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all outline-none appearance-none cursor-pointer bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 border-2 border-gray-700 shadow-sm"
-                            >
-                                <option value="">All Departments</option>
-                                {departments.map(dept => (
-                                    <option key={dept._id} value={dept._id}>{dept.name}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-4 bottom-3 pointer-events-none text-gray-600">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
+                {/* ========== TODAY'S HIGHLIGHTS — ALWAYS VISIBLE ========== */}
+                <motion.section
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mb-10">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <div className="p-1.5 bg-amber-100 rounded-lg">
+                                <Sparkles className="w-4 h-4 text-amber-600" />
                             </div>
-                        </div>
-
-                        <div className="relative flex-1 min-w-[140px]">
-                            <label className="block text-sm font-semibold font-bold uppercase tracking-wider mb-1.5 text-gray-700">Sport</label>
-                            <select
-                                value={selectedSport}
-                                onChange={(e) => setSelectedSport(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all outline-none appearance-none cursor-pointer bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 border-2 border-gray-700 shadow-sm"
-                            >
-                                <option value="">All Sports</option>
-                                {sports.map(sport => (
-                                    <option key={sport} value={sport}>{sportIcons[sport]} {sport.replace('_', ' ')}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-4 bottom-3 pointer-events-none text-gray-600">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {(selectedDept || selectedSport || selectedStatus) && (
-                            <button
-                                onClick={() => { setSelectedDept(''); setSelectedSport(''); setSelectedStatus(''); }}
-                                className="px-6 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-red-500 to-rose-500 text-white hover:shadow-lg transition-all border-2 border-transparent shadow-md"
-                            >
-                                Clear All ✕
+                            Today&apos;s Highlights
+                        </h2>
+                        {lastUpdated && (
+                            <button onClick={() => fetchData(true)}
+                                disabled={refreshing}
+                                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-500 transition-colors disabled:opacity-50">
+                                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                                {refreshing ? 'Updating...' : 'Refresh'}
                             </button>
                         )}
                     </div>
-                </div>
 
-                {/* Match List */}
-                <div className="max-w-5xl mx-auto px-4 py-10 min-h-[400px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* --- REEL OF THE DAY --- */}
+                        {loading ? <HighlightSkeleton /> : reelOfDay ? (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-gradient-to-br from-purple-50 via-violet-50 to-pink-50 border border-purple-200 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="p-1.5 bg-purple-100 rounded-lg">
+                                        <Film className="w-4 h-4 text-purple-600" />
+                                    </div>
+                                    <span className="text-sm font-bold text-purple-700">Reel of the Day</span>
+                                </div>
+                                <h3 className="font-semibold text-slate-900 text-base sm:text-lg mb-1">{reelOfDay.title}</h3>
+                                {reelOfDay.description && (
+                                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{reelOfDay.description}</p>
+                                )}
+                                {reelOfDay.videoUrl && (
+                                    <a href={reelOfDay.videoUrl} target="_blank" rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-all shadow-sm hover:shadow-md active:scale-95">
+                                        <Film className="w-3.5 h-3.5" /> Watch Now
+                                        <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
+                                    </a>
+                                )}
+                                {reelOfDay.credit && <p className="text-xs text-purple-400 mt-3">📸 {reelOfDay.credit}</p>}
+                            </motion.div>
+                        ) : (
+                            <div className="border-2 border-dashed border-purple-200 rounded-2xl p-6 sm:p-8 text-center bg-purple-50/30">
+                                <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <Film className="w-7 h-7 text-purple-300" />
+                                </div>
+                                <h3 className="font-semibold text-slate-600 mb-1">Reel of the Day</h3>
+                                <p className="text-sm text-slate-400">No reel posted today yet</p>
+                                <p className="text-xs text-slate-300 mt-1.5">Check back for match highlights! 🎬</p>
+                            </div>
+                        )}
+
+                        {/* --- PIC OF THE DAY --- */}
+                        {loading ? <HighlightSkeleton /> : picOfDay ? (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border border-amber-200 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow overflow-hidden">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="p-1.5 bg-amber-100 rounded-lg">
+                                        <Camera className="w-4 h-4 text-amber-600" />
+                                    </div>
+                                    <span className="text-sm font-bold text-amber-700">Pic of the Day</span>
+                                </div>
+                                <h3 className="font-semibold text-slate-900 text-base sm:text-lg mb-1">{picOfDay.title}</h3>
+                                {picOfDay.description && (
+                                    <p className="text-sm text-slate-600 mb-2 line-clamp-2">{picOfDay.description}</p>
+                                )}
+                                {picOfDay.imageUrl && (
+                                    <img src={picOfDay.imageUrl} alt={picOfDay.title}
+                                        className="w-full h-48 sm:h-56 object-cover rounded-xl border border-amber-200 mt-2"
+                                        loading="lazy" />
+                                )}
+                                {picOfDay.credit && <p className="text-xs text-amber-400 mt-3">📸 {picOfDay.credit}</p>}
+                            </motion.div>
+                        ) : (
+                            <div className="border-2 border-dashed border-amber-200 rounded-2xl p-6 sm:p-8 text-center bg-amber-50/30">
+                                <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <Camera className="w-7 h-7 text-amber-300" />
+                                </div>
+                                <h3 className="font-semibold text-slate-600 mb-1">Pic of the Day</h3>
+                                <p className="text-sm text-slate-400">No photo posted today yet</p>
+                                <p className="text-xs text-slate-300 mt-1.5">Check back for stunning captures! 📸</p>
+                            </div>
+                        )}
+                    </div>
+                </motion.section>
+
+                {/* ========== MATCHES SECTION ========== */}
+                <section>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <div className="p-1.5 bg-blue-100 rounded-lg">
+                                <Trophy className="w-4 h-4 text-blue-600" />
+                            </div>
+                            Matches
+                        </h2>
+                        <span className="text-xs text-slate-400 font-medium bg-slate-100 px-2.5 py-1 rounded-full">
+                            {filteredMatches.length} {filteredMatches.length === 1 ? 'match' : 'matches'}
+                        </span>
+                    </div>
+
+                    {/* Sport Filter Pills — horizontally scrollable on mobile */}
+                    <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
+                        <button onClick={() => setSelectedSport('ALL')}
+                            className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                                selectedSport === 'ALL'
+                                    ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/25'
+                                    : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                            }`}>
+                            All Sports
+                        </button>
+                        {SPORTS.map(sport => (
+                            <button key={sport} onClick={() => setSelectedSport(sport)}
+                                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+                                    selectedSport === sport
+                                        ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/25'
+                                        : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                                }`}>
+                                {SPORT_ICONS[sport]} {sport.replace('_', ' ')}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Status Tabs */}
+                    <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-6">
+                        {[
+                            { key: 'ALL', label: 'All' },
+                            { key: 'SCHEDULED', label: 'Upcoming' },
+                            { key: 'COMPLETED', label: 'Completed' },
+                            { key: 'CANCELLED', label: 'Cancelled' }
+                        ].map(tab => (
+                            <button key={tab.key} onClick={() => setSelectedStatus(tab.key)}
+                                className={`flex-1 px-2 sm:px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                    selectedStatus === tab.key
+                                        ? 'bg-white text-slate-900 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Match Grid */}
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20">
-                            <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                            <p className="mt-4 text-sm text-gray-500">
-                                Loading matches...
-                            </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <MatchCardSkeleton key={i} />
+                            ))}
                         </div>
                     ) : filteredMatches.length === 0 ? (
-                        <div className="text-center py-20 rounded-2xl bg-white shadow-lg border-2 border-gray-200">
-                            <div className="text-7xl mb-6">
-                                🏟️
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-center py-16 sm:py-20">
+                            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <span className="text-3xl">🏟️</span>
                             </div>
-                            <p className="text-xl font-bold text-gray-500">
-                                No matches found
-                            </p>
-                            {(selectedDept || selectedSport || selectedStatus) && (
-                                <button
-                                    onClick={() => { setSelectedDept(''); setSelectedSport(''); setSelectedStatus(''); }}
-                                    className="mt-6 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:shadow-lg transition-all"
-                                >
-                                    Clear all filters
+                            <h3 className="font-semibold text-slate-700 mb-1">No matches found</h3>
+                            <p className="text-sm text-slate-400 mb-4">Try adjusting your filters</p>
+                            {(selectedSport !== 'ALL' || selectedStatus !== 'ALL') && (
+                                <button onClick={() => { setSelectedSport('ALL'); setSelectedStatus('ALL'); }}
+                                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors active:scale-95">
+                                    Clear Filters
                                 </button>
                             )}
-                        </div>
+                        </motion.div>
                     ) : (
-                        <div className="space-y-4">
-                            {filteredMatches.map((match, idx) => {
-                                const prevMatch = filteredMatches[idx - 1];
-                                const showLiveHeader = idx === 0 && match.status === 'LIVE' && !selectedStatus;
-                                const showUpcomingHeader = match.status === 'SCHEDULED' && prevMatch?.status === 'LIVE' && !selectedStatus;
-                                const showCompletedHeader = match.status === 'COMPLETED' && prevMatch?.status !== 'COMPLETED' && !selectedStatus;
-
-                                return (
-                                    <React.Fragment key={match._id}>
-                                        {showLiveHeader && (
-                                            <div className="flex items-center gap-3 pt-4 pb-2">
-                                                <span className="relative flex h-4 w-4">
-                                                    <span className="animate-ping absolute h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                                                    <span className="relative rounded-full h-4 w-4 bg-red-500"></span>
-                                                </span>
-                                                <span className="text-xl font-black tracking-tight text-red-600">
-                                                    LIVE NOW
-                                                </span>
-                                            </div>
-                                        )}
-                                        {showUpcomingHeader && (
-                                            <div className="flex items-center gap-3 pt-8 pb-2">
-                                                <span className="text-2xl">📅</span>
-                                                <span className="text-xl font-black tracking-tight text-blue-600">
-                                                    UPCOMING
-                                                </span>
-                                            </div>
-                                        )}
-                                        {showCompletedHeader && (
-                                            <div className="flex items-center gap-3 pt-8 pb-2">
-                                                <span className="text-2xl">✓</span>
-                                                <span className="text-xl font-black tracking-tight text-green-600">
-                                                    COMPLETED
-                                                </span>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <MatchCard match={match} formatIST={formatIST} />
-                                        </div>
-                                    </React.Fragment>
-                                );
-                            })}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <AnimatePresence mode="popLayout">
+                                {filteredMatches.map((match, i) => (
+                                    <motion.div key={match._id}
+                                        layout
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ delay: Math.min(i * 0.03, 0.3) }}>
+                                        <MatchCard match={match} />
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         </div>
                     )}
-                </div>
+                </section>
 
                 {/* Footer */}
-                <footer className="py-10 text-center border-t-2 border-gray-600 bg-white shadow-inner text-gray-500">
-                    <p className="text-sm font-medium">
-                        VNIT Inter-Games © {new Date().getFullYear()}
-                    </p>
-                    <p className="text-sm font-semibold mt-2 text-gray-400">
-                        Real-time updates powered by Socket.io
-                    </p>
-                </footer>
+                {lastUpdated && !loading && (
+                    <div className="text-center mt-10 text-xs text-slate-300">
+                        Last updated {lastUpdated.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        {' · '}Real-time updates enabled
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import socket from '../../socket';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Activity, Trophy, Calendar, Users, Zap, ArrowRight, Sparkles } from 'lucide-react';
+import { TrendingUp, Activity, Trophy, Calendar, Users, Zap, ArrowRight, LayoutDashboard } from 'lucide-react';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
         total: 0,
-        live: 0,
         completed: 0,
         upcoming: 0,
         departments: 0
@@ -28,7 +27,6 @@ const Dashboard = () => {
 
                 setStats({
                     total: matches.length,
-                    live: matches.filter(m => m.status === 'LIVE').length,
                     completed: matches.filter(m => m.status === 'COMPLETED').length,
                     upcoming: matches.filter(m => m.status === 'SCHEDULED').length,
                     departments: departments.length
@@ -59,205 +57,144 @@ const Dashboard = () => {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'LIVE':
-                return (
-                    <span className="px-3 py-1 bg-red-50 text-red-700 text-sm font-semibold font-bold rounded-full border-2 border-red-300 flex items-center gap-1.5 shadow-sm">
-                        <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-                        LIVE
-                    </span>
-                );
             case 'COMPLETED':
-                return <span className="px-3 py-1 bg-green-50 text-green-700 text-sm font-semibold font-bold rounded-full border-2 border-green-300 shadow-sm">✓ COMPLETED</span>;
+                return <span className="px-2 py-0.5 bg-green-100 text-green-600 text-xs font-medium rounded-full">Completed</span>;
             case 'SCHEDULED':
-                return <span className="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-semibold font-bold rounded-full border-2 border-blue-300 shadow-sm">📅 UPCOMING</span>;
+                return <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">Upcoming</span>;
+            case 'CANCELLED':
+                return <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">Cancelled</span>;
             default:
-                return <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-semibold font-bold rounded-full border-2 border-gray-300">{status}</span>;
+                return <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">{status}</span>;
         }
     };
 
     const cards = [
-        {
-            title: 'Total Matches',
-            value: stats.total,
-            icon: <Trophy className="w-7 h-7 text-white" />,
-            gradient: 'from-indigo-600 to-indigo-700',
-            action: '/admin/live',
-            subtext: 'All matches'
-        },
-        {
-            title: 'Live Now',
-            value: stats.live,
-            icon: <Activity className="w-7 h-7 text-white" />,
-            gradient: 'from-red-500 to-rose-600',
-            action: '/admin/live',
-            subtext: 'In progress',
-            pulse: true
-        },
-        {
-            title: 'Completed',
-            value: stats.completed,
-            icon: <TrendingUp className="w-7 h-7 text-white" />,
-            gradient: 'from-emerald-500 to-green-600',
-            action: '/admin/live',
-            subtext: 'Finished'
-        },
-        {
-            title: 'Upcoming',
-            value: stats.upcoming,
-            icon: <Calendar className="w-7 h-7 text-white" />,
-            gradient: 'from-purple-500 to-violet-600',
-            action: '/admin/schedule',
-            subtext: 'Scheduled'
-        },
-        {
-            title: 'Departments',
-            value: stats.departments,
-            icon: <Users className="w-7 h-7 text-white" />,
-            gradient: 'from-blue-500 to-cyan-600',
-            action: '/admin/departments',
-            subtext: 'Participating'
-        }
+        { title: 'Total', value: stats.total, icon: <Trophy className="w-5 h-5" />, action: '/admin/live' },
+        { title: 'Completed', value: stats.completed, icon: <TrendingUp className="w-5 h-5" />, action: '/admin/live' },
+        { title: 'Upcoming', value: stats.upcoming, icon: <Calendar className="w-5 h-5" />, action: '/admin/schedule' },
+        { title: 'Departments', value: stats.departments, icon: <Users className="w-5 h-5" />, action: '/admin/departments' }
     ];
 
     const quickActions = [
-        { icon: '📅', title: 'Schedule', subtitle: 'Create Match', path: '/admin/schedule', bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700' },
-        { icon: '🎮', title: 'Live Scoring', subtitle: 'Update Scores', path: '/admin/live', bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-700' },
-        { icon: '🎖️', title: 'Award Points', subtitle: 'Manual Awards', path: '/admin/points', bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-700' },
-        { icon: '🏢', title: 'Departments', subtitle: 'Manage Teams', path: '/admin/departments', bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700' },
+        { icon: '📅', title: 'Schedule Match', path: '/admin/schedule' },
+        { icon: '🏆', title: 'Match Manager', path: '/admin/live' },
+        { icon: '✨', title: 'Highlights', path: '/admin/highlights' },
+        { icon: '🎖️', title: 'Award Points', path: '/admin/points' },
     ];
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen bg-gray-50">
+            <div className="flex justify-center items-center h-screen bg-slate-50 dark:bg-slate-900">
                 <div className="text-center">
-                    <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-4 animate-spin"></div>
-                    <p className="text-gray-900 font-medium">Loading dashboard...</p>
+                    <div className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-blue-500 mx-auto mb-4 animate-spin"></div>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+            <div className="p-6 max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="mb-10">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Sparkles className="w-8 h-8 text-indigo-600" />
-                        <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">
-                            Dashboard
-                        </h1>
+                <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-1">
+                        <LayoutDashboard className="w-6 h-6 text-blue-500" />
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
                     </div>
-                    <p className="text-gray-900 font-bold ml-11">Manage matches, scores, and events</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 ml-8">Manage matches and events</p>
                 </div>
 
-                {/* Stats Cards Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5 mb-10">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                     {cards.map((card, idx) => (
                         <button
                             key={idx}
                             onClick={() => navigate(card.action)}
-                            className={`relative bg-gradient-to-br ${card.gradient} rounded-2xl p-6 text-left overflow-hidden shadow-lg hover:shadow-xl border-2 border-transparent hover:border-white/20`}
+                            className="relative bg-white dark:bg-slate-800 rounded-xl p-4 text-left border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                         >
-                            {card.pulse && (
-                                <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 to-transparent rounded-2xl animate-pulse"></div>
-                            )}
-
-                            <div className="relative">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-2.5 bg-white/20 rounded-xl shadow-sm">
-                                        {card.icon}
-                                    </div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-500">
+                                    {card.icon}
                                 </div>
-                                <div className="text-4xl md:text-5xl font-black text-white mb-1">
-                                    {card.value}
-                                </div>
-                                <div className="text-sm font-semibold font-bold text-white/90 uppercase tracking-wider">
-                                    {card.title}
-                                </div>
-                                <div className="text-[10px] text-white/70 font-bold mt-0.5">{card.subtext}</div>
                             </div>
+                            <div className="text-2xl font-bold text-slate-900 dark:text-white">{card.value}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{card.title}</div>
                         </button>
                     ))}
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                     {quickActions.map((action, idx) => (
                         <button
                             key={idx}
                             onClick={() => navigate(action.path)}
-                            className={`p-6 ${action.bg} rounded-2xl border-2 ${action.border} hover:shadow-lg shadow-md`}
+                            className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors text-left"
                         >
-                            <div className="text-4xl mb-3">
-                                {action.icon}
-                            </div>
-                            <div className={`text-sm font-bold ${action.text} uppercase tracking-wider`}>{action.title}</div>
-                            <div className="text-sm font-semibold text-gray-900 mt-1">{action.subtitle}</div>
+                            <div className="text-2xl mb-2">{action.icon}</div>
+                            <div className="text-sm font-medium text-slate-900 dark:text-white">{action.title}</div>
                         </button>
                     ))}
                 </div>
 
                 {/* Recent Matches */}
-                <div className="bg-white rounded-2xl border-2 border-gray-600 overflow-hidden shadow-lg">
-                    <div className="p-6 border-b-2 border-gray-600 flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                            <div className="p-2 bg-yellow-100 rounded-xl border-2 border-yellow-300">
-                                <Zap className="w-5 h-5 text-yellow-700" />
-                            </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-blue-500" />
                             Recent Matches
                         </h2>
                         <button 
                             onClick={() => navigate('/admin/live')}
-                            className="text-sm text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-1"
+                            className="text-xs text-blue-500 hover:text-blue-600 font-medium flex items-center gap-1"
                         >
-                            View all
-                            <ArrowRight className="w-4 h-4" />
+                            View all <ArrowRight className="w-3 h-3" />
                         </button>
                     </div>
 
                     {recentMatches.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <div className="text-5xl mb-4">🏟️</div>
-                            <p className="text-gray-500">No matches yet. Create your first match!</p>
+                        <div className="p-8 text-center">
+                            <div className="text-3xl mb-2">🏟️</div>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No matches yet</p>
                             <button
                                 onClick={() => navigate('/admin/schedule')}
-                                className="mt-4 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg shadow-md"
+                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
                             >
                                 Create Match
                             </button>
                         </div>
                     ) : (
-                        <div className="divide-y-2 divide-gray-100">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-700">
                             {recentMatches.map((match, idx) => (
                                 <div
                                     key={match._id || idx}
                                     onClick={() => navigate(`/admin/live`)}
-                                    className="p-5 cursor-pointer hover:bg-gray-50"
+                                    className="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                                 >
                                     <div className="flex items-center justify-between gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                                <span className="text-sm font-semibold font-bold text-gray-900 uppercase tracking-wider">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
                                                     {match.sport?.replace('_', ' ')}
                                                 </span>
                                                 {getStatusBadge(match.status)}
                                             </div>
-                                            <div className="flex items-center gap-3 text-gray-900">
-                                                <span className="font-bold">{match.teamA?.shortCode || 'TBD'}</span>
-                                                <span className="text-gray-700 text-sm">vs</span>
-                                                <span className="font-bold">{match.teamB?.shortCode || 'TBD'}</span>
+                                            <div className="flex items-center gap-2 text-sm text-slate-900 dark:text-white">
+                                                <span className="font-medium">{match.teamA?.shortCode || 'TBD'}</span>
+                                                <span className="text-slate-400">vs</span>
+                                                <span className="font-medium">{match.teamB?.shortCode || 'TBD'}</span>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                                {typeof match.scoreA === 'object' ? (match.scoreA?.runs || 0) : (match.scoreA || 0)} - {typeof match.scoreB === 'object' ? (match.scoreB?.runs || 0) : (match.scoreB || 0)}
+                                            <div className="text-xl font-bold text-slate-900 dark:text-white">
+                                                {match.scoreA || '-'} vs {match.scoreB || '-'}
                                             </div>
-                                            <div className="text-sm font-semibold text-gray-900 font-bold mt-1">
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">
                                                 {match.venue || 'TBD'}
                                             </div>
                                         </div>
-                                        <ArrowRight className="w-5 h-5 text-gray-400" />
+                                        <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
                                     </div>
                                 </div>
                             ))}

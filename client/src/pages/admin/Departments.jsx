@@ -51,113 +51,97 @@ const Departments = () => {
 
     const getLogoUrl = (logoPath) => {
         if (!logoPath) return null;
-        return logoPath.startsWith('http') ? logoPath : `http://localhost:5000${logoPath}`;
-    };
-
-    const getDeptColor = (code) => {
-        const colors = {
-            'CSE': 'from-blue-600 to-cyan-600',
-            'ECE': 'from-purple-600 to-pink-600',
-            'EEE': 'from-orange-600 to-red-600',
-            'MECH': 'from-red-600 to-rose-600',
-            'CIVIL': 'from-yellow-600 to-amber-600',
-            'CHEM': 'from-green-600 to-emerald-600',
-            'META': 'from-pink-600 to-fuchsia-600',
-            'MINING': 'from-gray-600 to-slate-600'
-        };
-        return colors[code] || 'from-indigo-600 to-purple-600';
+        if (logoPath.startsWith('http')) return logoPath;
+        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+        return `${baseUrl}${logoPath}`;
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
             {/* Header */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-black text-gray-900 flex items-center gap-3">
-                        <Building className="w-8 h-8 text-indigo-600" />
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Building className="w-6 h-6 text-blue-500" />
                         Departments
                     </h1>
-                    <p className="text-gray-900 mt-1">Manage department logos and information</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage department logos</p>
                 </div>
                 <button
                     onClick={fetchDepartments}
                     disabled={loading}
-                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl border-2 border-transparent disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
                 >
-                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
                 </button>
             </div>
 
             {loading ? (
-                <div className="text-center py-20">
-                    <div className="w-12 h-12 mx-auto rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                    <p className="text-gray-900 mt-4">Loading departments...</p>
+                <div className="text-center py-16">
+                    <div className="w-10 h-10 mx-auto rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-blue-500 animate-spin"></div>
+                    <p className="text-slate-500 dark:text-slate-400 mt-4 text-sm">Loading...</p>
                 </div>
             ) : error ? (
-                <div className="p-6 bg-red-50 border-2 border-red-300 rounded-2xl text-red-700 shadow-md">{error}</div>
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">{error}</div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {departments.map((dept) => (
                         <div
                             key={dept._id}
-                            className="bg-white border-2 border-gray-600 rounded-2xl overflow-hidden hover:border-indigo-300 hover:shadow-xl shadow-lg"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                         >
-                            {/* Header with gradient */}
-                            <div className={`h-24 bg-gradient-to-br ${getDeptColor(dept.shortCode)} flex items-center justify-center relative shadow-md`}>
+                            {/* Header */}
+                            <div className="h-20 bg-blue-500 flex items-center justify-center">
                                 {getLogoUrl(dept.logo) ? (
                                     <img 
                                         src={getLogoUrl(dept.logo)} 
                                         alt={dept.shortCode} 
-                                        className="h-16 w-16 object-contain relative z-10 drop-shadow-lg" 
+                                        className="h-12 w-12 object-contain" 
                                     />
                                 ) : (
-                                    <span className="text-4xl font-black text-white relative z-10 drop-shadow-lg">
+                                    <span className="text-2xl font-bold text-white">
                                         {dept.shortCode?.slice(0, 2)}
                                     </span>
                                 )}
                             </div>
 
-                            <div className="p-6">
-                                <div className="flex justify-between items-start mb-3">
-                                    <div>
-                                        <h3 className="text-xl font-black text-gray-900">{dept.name}</h3>
-                                        <span className="text-sm text-gray-900 font-medium">{dept.shortCode}</span>
-                                    </div>
-                                </div>
+                            <div className="p-4">
+                                <h3 className="font-semibold text-slate-900 dark:text-white">{dept.name}</h3>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{dept.shortCode}</span>
 
                                 {/* Logo Edit */}
-                                <div className="pt-4 border-t-2 border-gray-100">
+                                <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-700">
                                     {editingId === dept._id ? (
-                                        <div className="space-y-3">
+                                        <div className="space-y-2">
                                             <input 
                                                 type="file" 
                                                 accept="image/*" 
                                                 onChange={handleFileChange} 
-                                                className="text-sm font-semibold text-gray-900 w-full border-2 border-gray-600 rounded-lg p-2" 
+                                                className="text-xs text-slate-600 dark:text-slate-400 w-full border border-slate-200 dark:border-slate-600 rounded-lg p-2 bg-slate-50 dark:bg-slate-900" 
                                             />
                                             <div className="flex gap-2">
                                                 <button 
                                                     onClick={() => handleSaveLogo(dept._id)} 
                                                     disabled={!selectedFile}
-                                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg disabled:opacity-50"
+                                                    className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium disabled:opacity-50"
                                                 >
-                                                    <Upload className="w-4 h-4" /> Upload
+                                                    <Upload className="w-3 h-3" /> Upload
                                                 </button>
                                                 <button 
                                                     onClick={() => { setEditingId(null); setSelectedFile(null); }}
-                                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm border-2 border-gray-600 hover:bg-gray-200"
+                                                    className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-600"
                                                 >
-                                                    <X className="w-4 h-4" /> Cancel
+                                                    <X className="w-3 h-3" /> Cancel
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
                                         <button 
                                             onClick={() => setEditingId(dept._id)}
-                                            className="w-full text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                                            className="w-full text-xs text-blue-500 hover:text-blue-600 font-medium"
                                         >
-                                            {dept.logo ? '🖼️ Change Logo' : '➕ Add Logo'}
+                                            {dept.logo ? 'Change Logo' : 'Add Logo'}
                                         </button>
                                     )}
                                 </div>

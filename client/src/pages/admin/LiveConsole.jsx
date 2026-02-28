@@ -1,504 +1,285 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import socket from '../../socket';
-import ScoringControls from '../../components/ScoringControls';
-import ConfirmModal from '../../components/ConfirmModal';
-import CricketScoreboard from '../../components/CricketScoreboard';
-import ProfessionalCricketScorecard from '../../components/ProfessionalCricketScorecard';
-import CricketSquadManager from '../../components/CricketSquadManager';
-import FootballScoreboard from '../../components/FootballScoreboard';
-import EnhancedFoulSystem from '../../components/EnhancedFoulSystem';
-import PenaltyShootout from '../../components/PenaltyShootout';
-import BadmintonScoreboard from '../../components/BadmintonScoreboard';
-import BadmintonAdminControls from '../../components/BadmintonAdminControls';
-import { toast } from 'react-hot-toast';
-import { RefreshCw, Play, Square, Trash2, X, Radio, Users } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, CheckCircle, Edit3, Trash2, Search, Filter, Save, X, AlertCircle } from 'lucide-react';
+import { SPORT_ICONS, STATUS_CONFIG } from '../../lib/constants';
+
+const STATUS_COLORS = {
+    SCHEDULED: STATUS_CONFIG.SCHEDULED.color,
+    COMPLETED: STATUS_CONFIG.COMPLETED.color,
+    CANCELLED: STATUS_CONFIG.CANCELLED.color
+};
 
 const LiveConsole = () => {
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedMatch, setSelectedMatch] = useState(null);
-    const [squadManagerMatch, setSquadManagerMatch] = useState(null);
-    const [confirmModal, setConfirmModal] = useState({ isOpen: false, matchId: null, action: null });
-    const [actionLoading, setActionLoading] = useState(null);
+    const [editingMatch, setEditingMatch] = useState(null);
+    const [editForm, setEditForm] = useState({});
+    const [filterSport, setFilterSport] = useState('ALL');
+    const [filterStatus, setFilterStatus] = useState('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [saving, setSaving] = useState(false);
 
-    const fetchMatches = useCallback(async () => {
+    const fetchMatches = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/matches');
-            setMatches(Array.isArray(response.data.data) ? response.data.data : []);
-        } catch (err) {
-            console.error('Failed to fetch matches', err);
-            toast.error('Failed to load matches');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+            const res = await api.get('/matches');
+            setMatches(res.data.data || []);
+        } catch (err) { toast.error('Failed to load matches'); }
+        finally { setLoading(false); }
+    };
 
-    useEffect(() => {
-        fetchMatches();
-        socket.on('matchUpdate', (updatedMatch) => {
-            console.log('🔄 Socket matchUpdate received:', {
-                matchId: updatedMatch._id,
-                striker: updatedMatch.currentBatsmen?.striker?.playerName,
-                nonStriker: updatedMatch.currentBatsmen?.nonStriker?.playerName
-            });
-            setMatches(prev => prev.map(m => m._id === updatedMatch._id ? updatedMatch : m));
-            setSelectedMatch(prev => prev?._id === updatedMatch._id ? updatedMatch : prev);
-        });
-        socket.on('matchDeleted', ({ matchId }) => {
-            setMatches(prev => prev.filter(m => m._id !== matchId));
-            if (selectedMatch?._id === matchId) setSelectedMatch(null);
-        });
-        return () => { socket.off('matchUpdate'); socket.off('matchDeleted'); };
-    }, [fetchMatches, selectedMatch]);
+    useEffect(() => { fetchMatches(); }, []);
 
-    const handleDelete = async () => {
-        const matchId = confirmModal.matchId;
-        setConfirmModal({ isOpen: false, matchId: null, action: null });
-        setActionLoading(matchId);
+    const startEdit = (match) => {
+        setEditingMatch(match._id);
+        setEditForm({
+            scoreA: match.scoreA || '',
+            scoreB: match.scoreB || '',
+            winner: match.winner?._id || match.winner || '',
+            status: match.status || 'SCHEDULED',
+            summary: match.summary || ''
+        });
+    };
+
+    const cancelEdit = () => { setEditingMatch(null); setEditForm({}); };
+
+    const saveResult = async (matchId) => {
+        setSaving(true);
+        try {
+            const payload = { ...editForm };
+            if (!payload.winner) delete payload.winner;
+            await api.put(`/matches/${matchId}`, payload);
+            toast.success('Match updated!');
+            setEditingMatch(null);
+            setEditForm({});
+            fetchMatches();
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to update'); }
+        finally { setSaving(false); }
+    };
+
+    const deleteMatch = async (matchId) => {
+        if (!window.confirm('Delete this match?')) return;
         try {
             await api.delete(`/matches/${matchId}`);
-            setMatches(matches.filter(m => m._id !== matchId));
-            toast.success('Match deleted successfully');
+            toast.success('Match deleted');
+            fetchMatches();
         } catch (err) { toast.error('Failed to delete match'); }
-        finally { setActionLoading(null); }
     };
 
-    const handleGoLive = async (match) => {
-        setActionLoading(match._id + '-live');
-        try {
-            await api.put(`/matches/${match.sport.toLowerCase()}/update`, { matchId: match._id, status: 'LIVE' });
-            toast.success('Match is now LIVE!');
-        } catch (err) { toast.error('Failed to update status'); }
-        finally { setActionLoading(null); }
-    };
-
-    const handleEndMatch = async (match) => {
-        setActionLoading(match._id + '-end');
-        try {
-            await api.put(`/matches/${match.sport.toLowerCase()}/update`, { matchId: match._id, status: 'COMPLETED' });
-            toast.success('Match completed!');
-        } catch (err) { toast.error('Failed to end match'); }
-        finally { setActionLoading(null); }
-    };
-
-    const handleScoreUpdate = async (updatePayload) => {
-        if (!selectedMatch) return;
-        try {
-            console.log('📤 Sending score update:', { sport: selectedMatch.sport, matchId: selectedMatch._id, payload: updatePayload });
-            const response = await api.put(`/matches/${selectedMatch.sport.toLowerCase()}/update`, { matchId: selectedMatch._id, ...updatePayload });
-            console.log('✅ Score update response:', response.data);
-            
-            // Immediately update selected match with the response data
-            if (response.data?.data) {
-                setSelectedMatch(response.data.data);
-            }
-            
-            toast.success('Score updated!');
-        } catch (err) {
-            console.error('❌ Score update error:', err);
-            console.error('❌ Error details:', {
-                message: err.message,
-                response: err.response?.data,
-                status: err.response?.status
-            });
-            toast.error(err.response?.data?.message || 'Failed to update score');
+    const filteredMatches = matches.filter(m => {
+        if (filterSport !== 'ALL' && m.sport !== filterSport) return false;
+        if (filterStatus !== 'ALL' && m.status !== filterStatus) return false;
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            const teamAName = m.teamA?.name?.toLowerCase() || m.teamA?.shortCode?.toLowerCase() || '';
+            const teamBName = m.teamB?.name?.toLowerCase() || m.teamB?.shortCode?.toLowerCase() || '';
+            if (!teamAName.includes(q) && !teamBName.includes(q) && !m.sport?.toLowerCase().includes(q)) return false;
         }
-    };
+        return true;
+    });
 
-    const handleTimerAction = async (timerData) => {
-        if (!selectedMatch) return;
-        try {
-            console.log('⏱️ Timer action triggered:', { action: timerData.action, data: timerData });
-            const response = await api.put(`/matches/${selectedMatch.sport.toLowerCase()}/update`, { 
-                matchId: selectedMatch._id, 
-                timerAction: timerData.action, 
-                timerData 
-            });
-            
-            // Update local match state immediately
-            if (response.data?.data) {
-                setMatches(prev => prev.map(m => 
-                    m._id === selectedMatch._id ? response.data.data : m
-                ));
-                setSelectedMatch(response.data.data);
-            }
-            
-            console.log('✅ Timer updated successfully:', response.data);
-            toast.success(`Timer ${timerData.action}`);
-        } catch (err) { 
-            console.error('❌ Timer action failed:', err);
-            toast.error('Timer update failed'); 
-        }
-    };
-
-    const handleAddFoul = async (foulData) => {
-        if (!selectedMatch) return;
-        try {
-            console.log('🔵 Adding foul:', { ...foulData, matchId: selectedMatch._id });
-            const response = await api.post('/fouls', { ...foulData, matchId: selectedMatch._id });
-            console.log('✅ Foul added:', response.data);
-            toast.success('Card/Foul added');
-        } catch (err) { 
-            console.error('❌ Failed to add foul:', err.response?.data || err.message);
-            toast.error(err.response?.data?.message || 'Failed to add card'); 
-        }
-    };
-
-    const handleRemoveFoul = async (foulId) => {
-        if (!selectedMatch) return;
-        try {
-            console.log('🔵 Removing foul:', foulId);
-            await api.delete(`/fouls/${foulId}`);
-            console.log('✅ Foul removed');
-            toast.success('Card/Foul removed');
-        } catch (err) { 
-            console.error('❌ Failed to remove foul:', err.response?.data || err.message);
-            toast.error(err.response?.data?.message || 'Failed to remove card'); 
-        }
-    };
-
-    const handleSetToss = async (tossData) => {
-        if (!selectedMatch) return;
-        try {
-            await api.put(`/matches/${selectedMatch.sport.toLowerCase()}/update`, { matchId: selectedMatch._id, toss: tossData });
-            toast.success('Toss recorded');
-        } catch (err) { toast.error('Failed to record toss'); }
-    };
-
-    // Handle squad updates for cricket matches
-    const handleSquadUpdate = async (squadData) => {
-        if (!squadManagerMatch) return;
-        try {
-            await api.put(`/matches/cricket/update`, { 
-                matchId: squadManagerMatch._id, 
-                squadA: squadData.squadA,
-                squadB: squadData.squadB
-            });
-            toast.success('Squads updated successfully!');
-            fetchMatches(); // Refresh matches
-        } catch (err) { 
-            console.error('Squad update error:', err);
-            toast.error('Failed to update squads'); 
-        }
-    };
-
-    const formatScore = (match) => {
-        if (match.sport === 'CRICKET') return `${match.scoreA?.runs || 0}/${match.scoreA?.wickets || 0} vs ${match.scoreB?.runs || 0}/${match.scoreB?.wickets || 0}`;
-        return `${match.scoreA || 0} - ${match.scoreB || 0}`;
-    };
+    const getTeamName = (team) => team?.shortCode || team?.name || 'TBD';
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 sm:p-6 md:p-8">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-6 sm:mb-8">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white flex items-center gap-2 sm:gap-3">
-                        <Radio className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
-                        Live Console
+        <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+            <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        <Trophy className="w-6 h-6 text-amber-500" />
+                        Match Manager
                     </h1>
-                    <p className="text-gray-700 mt-1 text-sm sm:text-base">Manage and score live matches in real-time</p>
+                    <p className="text-sm text-slate-500 mt-1">Update scores and results for completed matches</p>
                 </div>
-                <button
 
-                    onClick={fetchMatches}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-50 text-sm sm:text-base touch-manipulation"
-                >
-                    <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh
-                </button>
-            </div>
-
-            {loading ? (
-                <div className="text-center py-20">
-                    <div className="w-12 h-12 mx-auto rounded-full border-4 border-indigo-500/30 border-t-indigo-500" />
-                    <p className="text-gray-700 mt-4">Loading matches...</p>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-3 mb-6">
+                    <div className="flex items-center gap-2 flex-1 min-w-48 bg-white border border-slate-200 rounded-lg px-3 py-2">
+                        <Search className="w-4 h-4 text-slate-400" />
+                        <input type="text" placeholder="Search teams..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                            className="flex-1 outline-none text-sm text-slate-900 placeholder-slate-400 bg-transparent" />
+                    </div>
+                    <select value={filterSport} onChange={(e) => setFilterSport(e.target.value)}
+                        className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none">
+                        <option value="ALL">All Sports</option>
+                        {Object.entries(SPORT_ICONS).map(([k, v]) => <option key={k} value={k}>{v} {k}</option>)}
+                    </select>
+                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                        className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none">
+                        <option value="ALL">All Status</option>
+                        <option value="SCHEDULED">Scheduled</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
                 </div>
-            ) : matches.length === 0 ? (
-                <div className="text-center py-20 backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10">
-                    <div className="text-5xl mb-4">🏟️</div>
-                    <p className="text-gray-700 text-lg">No matches scheduled yet</p>
-                    <p className="text-gray-800 text-sm mt-2">Create a match from the Schedule page</p>
-                </div>
-            ) : (
-                <div className="grid gap-4">
-                    {matches.map((match) => (
-                        <div
-                            key={match._id}
-                            className={`backdrop-blur-xl rounded-xl sm:rounded-2xl border p-3 sm:p-4 md:p-5 transition-all ${
-                                match.status === 'LIVE' 
-                                    ? 'bg-red-500/10 border-red-500/30 ring-2 ring-red-500/20' 
-                                    : match.status === 'COMPLETED'
-                                    ? 'bg-green-500/10 border-green-500/30'
-                                    : 'bg-white/5 border-white/10 hover:border-white/20'
-                            }`}
-                        >
-                            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                                {/* Match Info */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
-                                        <span className="px-2 sm:px-3 py-1 text-sm font-semibold font-bold bg-white/10 text-gray-300 rounded-lg uppercase tracking-wider">
-                                            {match.sport.replace('_', ' ')}
-                                        </span>
-                                        <span className={`px-2 sm:px-3 py-1 text-xs font-bold rounded-lg flex items-center gap-1.5 ${
-                                            match.status === 'LIVE' ? 'bg-red-500 text-white' :
-                                            match.status === 'COMPLETED' ? 'bg-green-500 text-white' :
-                                            'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                        }`}>
-                                            {match.status === 'LIVE' && <span className="w-2 h-2 bg-white rounded-full animate-pulse" />}
-                                            {match.status}
-                                        </span>
-                                    </div>
 
-                                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                                        <span className="text-base sm:text-lg md:text-xl font-black text-white">{match.teamA?.shortCode || match.teamA?.name}</span>
-                                        <span className="text-gray-300 font-bold text-sm sm:text-base uppercase">VS</span>
-                                        <span className="text-base sm:text-lg md:text-xl font-black text-white">{match.teamB?.shortCode || match.teamB?.name}</span>
-                                    </div>
-
-                                    {match.status !== 'SCHEDULED' && (
-                                        <div className="mt-2 text-xl sm:text-2xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                                            {formatScore(match)}
-                                        </div>
-                                    )}
-
-                                    <div className="text-sm font-semibold sm:text-base text-gray-300 mt-2">
-                                        {new Date(match.scheduledAt).toLocaleString()}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-                                    {/* Manage Squad Button - Cricket Only */}
-                                    {match.sport === 'CRICKET' && (
-                                        <button
-
-                                            onClick={() => setSquadManagerMatch(match)}
-                                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-amber-600 to-orange-500 text-white rounded-lg sm:rounded-xl font-bold shadow-lg shadow-amber-500/25 text-sm font-semibold sm:text-sm touch-manipulation"
-                                        >
-                                            <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                                            {match.squadA?.length > 0 || match.squadB?.length > 0 ? 'Edit Squads' : 'Add Players'}
-                                        </button>
-                                    )}
-
-                                    {match.status === 'SCHEDULED' && (
-                                        <button
-
-                                            onClick={() => handleGoLive(match)}
-                                            disabled={actionLoading === match._id + '-live'}
-                                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-lg sm:rounded-xl font-bold shadow-lg shadow-red-500/25 disabled:opacity-50 text-sm font-semibold sm:text-sm touch-manipulation"
-                                        >
-                                            {actionLoading === match._id + '-live' ? (
-                                                <span className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <Play className="w-3 h-3 sm:w-4 sm:h-4" />
-                                            )}
-                                            Go Live
-                                        </button>
-                                    )}
-
-                                    {match.status === 'LIVE' && (
-                                        <>
-                                            <button
-
-                                                onClick={() => setSelectedMatch(match)}
-                                                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg sm:rounded-xl font-bold shadow-lg shadow-indigo-500/25 text-sm font-semibold sm:text-sm touch-manipulation"
-                                            >
-                                                Update Score
-                                            </button>
-                                            <button
-
-                                                onClick={() => handleEndMatch(match)}
-                                                disabled={actionLoading === match._id + '-end'}
-                                                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-lg sm:rounded-xl font-bold shadow-lg shadow-green-500/25 disabled:opacity-50 text-sm font-semibold sm:text-sm touch-manipulation"
-                                            >
-                                                <Square className="w-3 h-3 sm:w-4 sm:h-4" />
-                                                {actionLoading === match._id + '-end' ? 'Ending...' : 'End Match'}
-                                            </button>
-                                        </>
-                                    )}
-
-                                    {match.status === 'COMPLETED' && (
-                                        <span className="px-3 sm:px-4 py-2 sm:py-2.5 bg-green-500/20 text-green-400 rounded-lg sm:rounded-xl font-bold border border-green-500/30 text-sm font-semibold sm:text-sm">
-                                            ✓ Completed
-                                        </span>
-                                    )}
-
-                                    <button
-
-                                        onClick={() => setConfirmModal({ isOpen: true, matchId: match._id, action: 'delete' })}
-                                        disabled={actionLoading === match._id}
-                                        className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/5 text-gray-700 hover:bg-red-500/20 hover:text-red-400 rounded-lg sm:rounded-xl font-bold border border-white/10 hover:border-red-500/30 transition-all disabled:opacity-50 text-sm font-semibold sm:text-sm touch-manipulation"
-                                    >
-                                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                                        <span className="hidden sm:inline">Delete</span>
-                                    </button>
-                                </div>
-                            </div>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                    {[
+                        { label: 'Total', count: matches.length, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                        { label: 'Scheduled', count: matches.filter(m => m.status === 'SCHEDULED').length, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+                        { label: 'Completed', count: matches.filter(m => m.status === 'COMPLETED').length, color: 'bg-green-50 text-green-700 border-green-200' }
+                    ].map(stat => (
+                        <div key={stat.label} className={`p-3 rounded-lg border text-center ${stat.color}`}>
+                            <div className="text-2xl font-bold">{stat.count}</div>
+                            <div className="text-xs font-medium">{stat.label}</div>
                         </div>
                     ))}
                 </div>
-            )}
 
-            {/* Confirm Delete Modal */}
-            <ConfirmModal
-                isOpen={confirmModal.isOpen}
-                title="Delete Match"
-                message="Are you sure you want to delete this match? This action cannot be undone."
-                confirmText="Delete"
-                onConfirm={handleDelete}
-                onCancel={() => setConfirmModal({ isOpen: false, matchId: null, action: null })}
-                variant="danger"
-            />
-
-            {/* Full Page Scoring View */}
-            {selectedMatch && (
-                <div 
-                    className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 z-50 overflow-y-auto"
-                >
-                    <div className="min-h-screen w-full">
-                        {/* Header Bar - Fixed */}
-                        <div className="sticky top-0 bg-slate-900/98 backdrop-blur-xl border-b border-white/10 shadow-xl z-20">
-                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-                                <div className="flex justify-between items-center gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white flex items-center gap-3">
-                                            <Radio className="w-6 h-6 sm:w-7 sm:h-7 text-red-500 animate-pulse" />
-                                            Live Score Management
-                                        </h2>
-                                        <p className="text-base sm:text-lg text-gray-400 mt-1 font-semibold">
-                                            {selectedMatch.sport.replace('_', ' ')} • {selectedMatch.teamA?.name} vs {selectedMatch.teamB?.name}
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setSelectedMatch(null)}
-                                        className="p-3 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors border border-red-500/30 hover:border-red-500/50 flex-shrink-0"
-                                    >
-                                        <X className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Main Content Area - Full Width */}
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-                            <div className="space-y-6 sm:space-y-8">
-                                {/* Live Scoreboard Preview - Large Display */}
-                                <div className="bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-pink-600/20 rounded-2xl sm:rounded-3xl border border-white/20 shadow-2xl p-6 sm:p-8">
-                                    <div className="text-center">
-                                        <div className="text-sm sm:text-base font-bold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4">Live Score</div>
-                                        <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-tight">
-                                            {formatScore(selectedMatch)}
-                                        </div>
-                                        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 rounded-full border border-red-500/30">
-                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                            <span className="text-red-400 text-sm font-bold uppercase tracking-wide">Live</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Cricket Advanced Scorecard - Full Width */}
-                                {selectedMatch.sport === 'CRICKET' && (
-                                    <div className="space-y-6">
-                                        <CricketScoreboard match={selectedMatch} isAdmin={true} />
-                                        <ScoringControls
-                                            match={selectedMatch}
-                                            onUpdate={handleScoreUpdate}
-                                            onTimerAction={handleTimerAction}
-                                            onAddFoul={handleAddFoul}
-                                            onRemoveFoul={handleRemoveFoul}
-                                            onSetToss={handleSetToss}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Badminton Enhanced Controls - Full Width */}
-                                {selectedMatch.sport === 'BADMINTON' && (
-                                    <div className="space-y-6">
-                                        <BadmintonScoreboard match={selectedMatch} />
-                                        <BadmintonAdminControls match={selectedMatch} onUpdate={handleScoreUpdate} />
-                                    </div>
-                                )}
-
-                                {/* Football/Hockey Scoreboard - Full Width */}
-                                {['FOOTBALL', 'HOCKEY'].includes(selectedMatch.sport) && (
-                                    <div className="space-y-6">
-                                        <FootballScoreboard match={selectedMatch} isAdmin={true} />
-                                        <ScoringControls
-                                            match={selectedMatch}
-                                            onUpdate={handleScoreUpdate}
-                                            onTimerAction={handleTimerAction}
-                                            onAddFoul={handleAddFoul}
-                                            onRemoveFoul={handleRemoveFoul}
-                                            onSetToss={handleSetToss}
-                                        />
-                                        
-                                        {/* Enhanced Foul System */}
-                                        <EnhancedFoulSystem
-                                            match={selectedMatch}
-                                            onAddFoul={handleAddFoul}
-                                            onRemoveFoul={handleRemoveFoul}
-                                            disabled={selectedMatch.status !== 'LIVE'}
-                                        />
-                                        
-                                        {/* Penalty Shootout */}
-                                        <PenaltyShootout
-                                            match={selectedMatch}
-                                            onUpdate={handleScoreUpdate}
-                                            disabled={selectedMatch.status === 'COMPLETED'}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Default Scoring Controls for other sports - Full Width */}
-                                {!['BADMINTON', 'CRICKET', 'FOOTBALL', 'HOCKEY'].includes(selectedMatch.sport) && (
-                                    <ScoringControls
-                                        match={selectedMatch}
-                                        onUpdate={handleScoreUpdate}
-                                        onTimerAction={handleTimerAction}
-                                        onAddFoul={handleAddFoul}
-                                        onRemoveFoul={handleRemoveFoul}
-                                        onSetToss={handleSetToss}
-                                    />
-                                )}
-
-                                {/* Footer Actions */}
-                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-white/10">
-                                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                        <span className="font-semibold">Changes saved instantly via Socket.io</span>
-                                    </div>
-                                    <div className="flex gap-3 w-full sm:w-auto">
-                                        <button
-                                            onClick={() => setSelectedMatch(null)}
-                                            className="flex-1 sm:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold text-sm border border-white/10 transition-all"
-                                        >
-                                            Close
-                                        </button>
-                                        <button
-                                            onClick={() => handleEndMatch(selectedMatch)}
-                                            className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-500/25 transition-all"
-                                        >
-                                            Complete Match
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                {/* Match List */}
+                {loading ? (
+                    <div className="text-center py-12 text-slate-400">Loading matches...</div>
+                ) : filteredMatches.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                        <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p>No matches found</p>
                     </div>
-                </div>
-            )}
+                ) : (
+                    <div className="space-y-3">
+                        <AnimatePresence>
+                            {filteredMatches.map((match) => (
+                                <motion.div key={match._id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="bg-white border border-slate-200 rounded-xl overflow-hidden">
 
-            {/* Squad Manager Modal */}
-            {squadManagerMatch && (
-                <CricketSquadManager
-                    match={squadManagerMatch}
-                    onUpdate={handleSquadUpdate}
-                    onClose={() => setSquadManagerMatch(null)}
-                />
-            )}
+                                    {/* Match Header */}
+                                    <div className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg">{SPORT_ICONS[match.sport] || '🏅'}</span>
+                                                <span className="text-sm font-medium text-slate-700">{match.sport}</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_COLORS[match.status] || ''}`}>
+                                                    {match.status}
+                                                </span>
+                                                {match.matchCategory && match.matchCategory !== 'REGULAR' && (
+                                                    <span className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700 border border-purple-200">
+                                                        {match.matchCategory.replace('_', ' ')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => editingMatch === match._id ? cancelEdit() : startEdit(match)}
+                                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
+                                                    {editingMatch === match._id ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                                                </button>
+                                                <button onClick={() => deleteMatch(match._id)}
+                                                    className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Teams Display */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1 text-center">
+                                                <div className={`text-xl font-bold ${match.winner && (match.winner._id || match.winner) === (match.teamA?._id) ? 'text-green-600' : 'text-slate-800'}`}>
+                                                    {getTeamName(match.teamA)}
+                                                </div>
+                                                {match.scoreA && <div className="text-lg font-semibold text-blue-600 mt-0.5">{match.scoreA}</div>}
+                                            </div>
+                                            <div className="px-4 text-slate-400 font-bold text-sm">VS</div>
+                                            <div className="flex-1 text-center">
+                                                <div className={`text-xl font-bold ${match.winner && (match.winner._id || match.winner) === (match.teamB?._id) ? 'text-green-600' : 'text-slate-800'}`}>
+                                                    {getTeamName(match.teamB)}
+                                                </div>
+                                                {match.scoreB && <div className="text-lg font-semibold text-blue-600 mt-0.5">{match.scoreB}</div>}
+                                            </div>
+                                        </div>
+
+                                        {match.summary && (
+                                            <div className="mt-2 text-xs text-slate-500 text-center italic">{match.summary}</div>
+                                        )}
+
+                                        <div className="flex items-center justify-center gap-3 mt-2 text-xs text-slate-400">
+                                            {match.venue && <span>📍 {match.venue}</span>}
+                                            {match.scheduledAt && <span>📅 {new Date(match.scheduledAt).toLocaleDateString()}</span>}
+                                        </div>
+                                    </div>
+
+                                    {/* Edit Form */}
+                                    <AnimatePresence>
+                                        {editingMatch === match._id && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="border-t border-slate-200 overflow-hidden">
+                                                <div className="p-4 bg-slate-50 space-y-3">
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-slate-600 mb-1">
+                                                                {getTeamName(match.teamA)} Score
+                                                            </label>
+                                                            <input type="text" value={editForm.scoreA} placeholder="e.g. 156/4, 3-1"
+                                                                onChange={(e) => setEditForm(prev => ({ ...prev, scoreA: e.target.value }))}
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-slate-600 mb-1">
+                                                                {getTeamName(match.teamB)} Score
+                                                            </label>
+                                                            <input type="text" value={editForm.scoreB} placeholder="e.g. 142/8, 2-1"
+                                                                onChange={(e) => setEditForm(prev => ({ ...prev, scoreB: e.target.value }))}
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-slate-600 mb-1">Winner</label>
+                                                            <select value={editForm.winner}
+                                                                onChange={(e) => setEditForm(prev => ({ ...prev, winner: e.target.value }))}
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                                                <option value="">No winner yet</option>
+                                                                <option value={match.teamA?._id}>{getTeamName(match.teamA)}</option>
+                                                                <option value={match.teamB?._id}>{getTeamName(match.teamB)}</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                                                            <select value={editForm.status}
+                                                                onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                                                <option value="SCHEDULED">Scheduled</option>
+                                                                <option value="COMPLETED">Completed</option>
+                                                                <option value="CANCELLED">Cancelled</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-slate-600 mb-1">Summary (optional)</label>
+                                                        <input type="text" value={editForm.summary}
+                                                            placeholder="e.g. CSE won by 14 runs"
+                                                            onChange={(e) => setEditForm(prev => ({ ...prev, summary: e.target.value }))}
+                                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                                    </div>
+
+                                                    <div className="flex gap-2 pt-1">
+                                                        <button onClick={() => saveResult(match._id)} disabled={saving}
+                                                            className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-50">
+                                                            <Save className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save Result'}
+                                                        </button>
+                                                        <button onClick={cancelEdit}
+                                                            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

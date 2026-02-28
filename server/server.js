@@ -28,6 +28,7 @@ const aboutRoutes = require('./routes/aboutRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const playerRoutes = require('./routes/playerRoutes');
 const foulRoutes = require('./routes/foulRoutes');
+const highlightRoutes = require('./routes/highlightRoutes');
 
 // Connect to MongoDB asynchronously - don't block server startup
 console.log('🔄 Initiating MongoDB connection in background...');
@@ -233,6 +234,8 @@ app.use('/api/players', playerRoutes);
 console.log('📍 Player routes mounted');
 app.use('/api/fouls', foulRoutes);
 console.log('📍 Foul routes mounted');
+app.use('/api/highlights', highlightRoutes);
+console.log('📍 Highlight routes mounted');
 
 // Error handler middleware
 app.use((err, req, res, next) => {

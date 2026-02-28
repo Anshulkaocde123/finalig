@@ -11,6 +11,7 @@ import ScoringPresets from './pages/admin/ScoringPresets';
 import StudentCouncilManagement from './pages/admin/StudentCouncilManagement';
 import AboutManagement from './pages/admin/AboutManagement';
 import AdminManagement from './pages/admin/AdminManagement';
+import HighlightManagement from './pages/admin/HighlightManagement';
 import Login from './pages/auth/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/public/Home';
@@ -38,6 +39,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/match/:id" element={<MatchDetail />} />
+        <Route path="/matches/:id" element={<MatchDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/student-council" element={<StudentCouncil />} />
         
@@ -59,6 +61,7 @@ function App() {
             <Route path="scoring-presets" element={<ScoringPresets />} />
             <Route path="users" element={<AdminManagement />} />
             <Route path="student-council" element={<StudentCouncilManagement />} />
+            <Route path="highlights" element={<HighlightManagement />} />
             <Route path="about" element={<AboutManagement />} />
             <Route path="*" element={<div className="text-gray-500 p-4">Page not found</div>} />
           </Route>

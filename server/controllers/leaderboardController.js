@@ -66,6 +66,7 @@ const getStandings = async (req, res) => {
                     _id: 1,
                     name: '$deptDetails.name',
                     shortCode: '$deptDetails.shortCode',
+                    logo: '$deptDetails.logo',
                     points: 1,
                     history: 1
                 }
@@ -88,6 +89,7 @@ const getStandings = async (req, res) => {
                     _id: dept._id,
                     name: dept.name,
                     shortCode: dept.shortCode,
+                    logo: dept.logo,
                     points: 0,
                     history: []
                 });
@@ -245,13 +247,13 @@ const awardPointsFromMatch = async (req, res) => {
                 description: `Draw vs ${match.teamA.shortCode}`
             }));
         } else {
-            // Calculate score difference for bonus
+            // Calculate score difference for bonus (scores are now strings like "156/4" or "3-1")
             let scoreDiff = 0;
-            if (match.scoreA !== undefined && match.scoreB !== undefined) {
-                scoreDiff = Math.abs(
-                    (typeof match.scoreA === 'object' ? match.scoreA.runs || 0 : match.scoreA) -
-                    (typeof match.scoreB === 'object' ? match.scoreB.runs || 0 : match.scoreB)
-                );
+            if (match.scoreA && match.scoreB) {
+                // Try to extract numeric scores for comparison
+                const numA = parseInt(match.scoreA) || 0;
+                const numB = parseInt(match.scoreB) || 0;
+                scoreDiff = Math.abs(numA - numB);
             }
             
             let winPoints = Math.round(preset.winPoints * multiplier);
