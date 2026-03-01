@@ -54,7 +54,7 @@ const AboutManagement = () => {
                 <div className="mb-8">
                     <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                         <BookOpen className="w-8 h-8 text-blue-500" />
-                        About VNIT IG
+                        About Institute Gathering
                     </h1>
                     <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your about page content</p>
                 </div>
@@ -67,7 +67,7 @@ const AboutManagement = () => {
                             {/* Title */}
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Page Title *</label>
-                                <input type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="About VNIT Inter-Department Games"
+                                <input type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="About Institute Gathering"
                                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none" />
                             </div>
 
@@ -95,7 +95,7 @@ const AboutManagement = () => {
                             {/* History */}
                             <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                                 <label className="block text-sm font-semibold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-2"><History className="w-4 h-4" /> History</label>
-                                <textarea name="history" value={formData.history} onChange={handleInputChange} rows="4" placeholder="History of VNIT IG..."
+                                <textarea name="history" value={formData.history} onChange={handleInputChange} rows="4" placeholder="History of Institute Gathering..."
                                     className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 rounded-lg text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-500 outline-none resize-none" />
                             </div>
 

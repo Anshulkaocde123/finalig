@@ -50,11 +50,12 @@ const LiveConsole = () => {
         try {
             const payload = { ...editForm };
             if (!payload.winner) delete payload.winner;
-            await api.put(`/matches/${matchId}`, payload);
+            const res = await api.put(`/matches/${matchId}`, payload);
             toast.success('Match updated!');
+            // Instantly update local state
+            setMatches(prev => prev.map(m => m._id === matchId ? { ...m, ...payload, ...(res.data?.data || {}) } : m));
             setEditingMatch(null);
             setEditForm({});
-            fetchMatches();
         } catch (err) { toast.error(err.response?.data?.message || 'Failed to update'); }
         finally { setSaving(false); }
     };
@@ -63,8 +64,9 @@ const LiveConsole = () => {
         if (!window.confirm('Delete this match?')) return;
         try {
             await api.delete(`/matches/${matchId}`);
+            // Instantly remove from local state
+            setMatches(prev => prev.filter(m => m._id !== matchId));
             toast.success('Match deleted');
-            fetchMatches();
         } catch (err) { toast.error('Failed to delete match'); }
     };
 

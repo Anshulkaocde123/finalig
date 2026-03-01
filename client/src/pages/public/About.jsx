@@ -41,10 +41,10 @@ const AboutPage = () => {
             {/* Header */}
             <div className="py-12 px-4 text-center border-b border-slate-200 dark:border-slate-700">
                 <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                    About VNIT Inter-Games
+                    About Institute Gathering
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Celebrating Excellence in Sports
+                    Celebrating Excellence
                 </p>
             </div>
 
@@ -156,6 +156,20 @@ const AboutPage = () => {
                     </Link>
                 </div>
             </div>
+
+            {/* Developer Credits Footer */}
+            <footer className="border-t border-slate-200 dark:border-slate-700 mt-12 py-6 text-center">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Developed by:{' '}
+                    Chinmay Sabharwal, Anshul Jain, Sanvi Y
+                    <br />
+                    Mentored by:{' '}
+                    Vedant Singh, Jayesh Patil
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                    © {new Date().getFullYear()} Institute Gathering. All rights reserved.
+                </p>
+            </footer>
         </div>
     );
 };

@@ -11,7 +11,7 @@ const compression = require('compression');
 // Load environment variables FIRST - before any other imports that need them
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-console.log('🔄 Starting VNIT IG App Server...');
+console.log('🔄 Starting IG App Server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔗 MongoDB URI: ${process.env.MONGODB_URI ? 'SET' : 'NOT SET'}`);
 
@@ -75,6 +75,8 @@ app.get('/alive', (req, res) => {
 });
 
 // Socket.io status endpoint
+const connectedClients = new Map();
+
 app.get('/api/socket-status', (req, res) => {
     const clients = [];
     for (const [socketId, data] of connectedClients.entries()) {
@@ -129,8 +131,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Socket.io connection handling with error management
-const connectedClients = new Map();
-
 io.on('connection', (socket) => {
     console.log('🔌 Client connected:', socket.id);
     connectedClients.set(socket.id, {
@@ -282,7 +282,7 @@ const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0'; // Always bind to 0.0.0.0 for Railway
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('🚀 VNIT IG App Server Starting');
+console.log('🚀 IG App Server Starting');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔌 Binding to: ${HOST}:${PORT}`);

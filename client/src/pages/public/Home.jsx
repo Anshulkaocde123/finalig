@@ -6,7 +6,7 @@ import MatchCard from '../../components/MatchCard';
 import { MatchCardSkeleton, HighlightSkeleton } from '../../components/SkeletonLoader';
 import { SPORT_ICONS, SPORTS } from '../../lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Film, Trophy, Sparkles, RefreshCw, ExternalLink } from 'lucide-react';
+import { Camera, Film, Trophy, Sparkles, RefreshCw, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Home = () => {
     const [matches, setMatches] = useState([]);
@@ -16,17 +16,38 @@ const Home = () => {
     const [selectedSport, setSelectedSport] = useState('ALL');
     const [selectedStatus, setSelectedStatus] = useState('ALL');
     const [lastUpdated, setLastUpdated] = useState(null);
+    const [highlightDate, setHighlightDate] = useState(new Date().toISOString().split('T')[0]);
+    const [availableDates, setAvailableDates] = useState([]);
     const debounceRef = useRef(null);
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const fetchHighlightsForDate = useCallback(async (date) => {
+        try {
+            const res = await api.get(`/highlights?date=${date}`);
+            const data = res.data.data || res.data || [];
+            const reel = data.find(h => h.type === 'reel') || null;
+            const pic = data.find(h => h.type === 'pic') || null;
+            setHighlights({ reelOfTheDay: reel, picOfTheDay: pic });
+        } catch {
+            setHighlights({});
+        }
+    }, []);
 
     const fetchData = useCallback(async (isRefresh = false) => {
         try {
             if (isRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const [matchRes, highlightRes] = await Promise.all([
+            const [matchRes] = await Promise.all([
                 api.get('/matches'),
-                api.get('/highlights/today').catch(() => ({ data: { data: {} } }))
+                fetchHighlightsForDate(highlightDate)
             ]);
+
+            // Fetch available highlight dates
+            api.get('/highlights/dates').then(res => {
+                setAvailableDates(res.data || []);
+            }).catch(() => {});
 
             const matchData = matchRes.data.data || [];
             matchData.sort((a, b) => {
@@ -36,7 +57,6 @@ const Home = () => {
             });
 
             setMatches(matchData);
-            setHighlights(highlightRes.data?.data || {});
             setLastUpdated(new Date());
         } catch (err) {
             console.error('Failed to load data', err);
@@ -44,7 +64,7 @@ const Home = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [highlightDate, fetchHighlightsForDate]);
 
     useEffect(() => {
         fetchData();
@@ -62,6 +82,28 @@ const Home = () => {
             events.forEach(e => socket.off(e, debouncedFetch));
         };
     }, [fetchData]);
+
+    // Re-fetch highlights when date changes (without reloading matches)
+    useEffect(() => {
+        fetchHighlightsForDate(highlightDate);
+    }, [highlightDate, fetchHighlightsForDate]);
+
+    const shiftDate = (days) => {
+        const d = new Date(highlightDate);
+        d.setDate(d.getDate() + days);
+        const newDate = d.toISOString().split('T')[0];
+        if (newDate <= todayStr) {
+            setHighlightDate(newDate);
+        }
+    };
+
+    const formatDisplayDate = (dateStr) => {
+        if (dateStr === todayStr) return 'Today';
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (dateStr === yesterday.toISOString().split('T')[0]) return 'Yesterday';
+        return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
 
     const filteredMatches = useMemo(() => {
         return matches.filter(m => {
@@ -96,12 +138,12 @@ const Home = () => {
                         Season 2025-26
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
-                        VNIT Inter-Department
+                        Institute Gathering
                         <br className="sm:hidden" />
-                        {' '}<span className="text-blue-600">Games</span>
+                        {' '}
                     </h1>
                     <p className="text-slate-500 text-sm max-w-md mx-auto">
-                        Follow all the action from the inter-department sports championship
+                        Follow all the action from the inter-department championship
                     </p>
                 </motion.div>
 
@@ -137,7 +179,7 @@ const Home = () => {
                             <div className="p-1.5 bg-amber-100 rounded-lg">
                                 <Sparkles className="w-4 h-4 text-amber-600" />
                             </div>
-                            Today&apos;s Highlights
+                            Highlights
                         </h2>
                         {lastUpdated && (
                             <button onClick={() => fetchData(true)}
@@ -145,6 +187,43 @@ const Home = () => {
                                 className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-500 transition-colors disabled:opacity-50">
                                 <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
                                 {refreshing ? 'Updating...' : 'Refresh'}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Date Selector */}
+                    <div className="flex items-center justify-center gap-3 mb-5">
+                        <button
+                            onClick={() => shiftDate(-1)}
+                            className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-500 transition-colors"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="date"
+                                value={highlightDate}
+                                max={todayStr}
+                                onChange={(e) => setHighlightDate(e.target.value)}
+                                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span className="text-sm font-medium text-slate-600">
+                                {formatDisplayDate(highlightDate)}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => shiftDate(1)}
+                            disabled={highlightDate >= todayStr}
+                            className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                        {highlightDate !== todayStr && (
+                            <button
+                                onClick={() => setHighlightDate(todayStr)}
+                                className="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                            >
+                                Today
                             </button>
                         )}
                     </div>
@@ -162,18 +241,16 @@ const Home = () => {
                                     </div>
                                     <span className="text-sm font-bold text-purple-700">Reel of the Day</span>
                                 </div>
-                                <h3 className="font-semibold text-slate-900 text-base sm:text-lg mb-1">{reelOfDay.title}</h3>
-                                {reelOfDay.description && (
-                                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{reelOfDay.description}</p>
+                                {reelOfDay.caption && (
+                                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{reelOfDay.caption}</p>
                                 )}
-                                {reelOfDay.videoUrl && (
-                                    <a href={reelOfDay.videoUrl} target="_blank" rel="noopener noreferrer"
+                                {reelOfDay.instagramUrl && (
+                                    <a href={reelOfDay.instagramUrl} target="_blank" rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-all shadow-sm hover:shadow-md active:scale-95">
-                                        <Film className="w-3.5 h-3.5" /> Watch Now
+                                        <Film className="w-3.5 h-3.5" /> Watch on Instagram
                                         <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
                                     </a>
                                 )}
-                                {reelOfDay.credit && <p className="text-xs text-purple-400 mt-3">📸 {reelOfDay.credit}</p>}
                             </motion.div>
                         ) : (
                             <div className="border-2 border-dashed border-purple-200 rounded-2xl p-6 sm:p-8 text-center bg-purple-50/30">
@@ -198,16 +275,16 @@ const Home = () => {
                                     </div>
                                     <span className="text-sm font-bold text-amber-700">Pic of the Day</span>
                                 </div>
-                                <h3 className="font-semibold text-slate-900 text-base sm:text-lg mb-1">{picOfDay.title}</h3>
-                                {picOfDay.description && (
-                                    <p className="text-sm text-slate-600 mb-2 line-clamp-2">{picOfDay.description}</p>
+                                {picOfDay.caption && (
+                                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{picOfDay.caption}</p>
                                 )}
-                                {picOfDay.imageUrl && (
-                                    <img src={picOfDay.imageUrl} alt={picOfDay.title}
-                                        className="w-full h-48 sm:h-56 object-cover rounded-xl border border-amber-200 mt-2"
-                                        loading="lazy" />
+                                {picOfDay.instagramUrl && (
+                                    <a href={picOfDay.instagramUrl} target="_blank" rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-medium hover:bg-amber-700 transition-all shadow-sm hover:shadow-md active:scale-95">
+                                        <Camera className="w-3.5 h-3.5" /> View on Instagram
+                                        <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
+                                    </a>
                                 )}
-                                {picOfDay.credit && <p className="text-xs text-amber-400 mt-3">📸 {picOfDay.credit}</p>}
                             </motion.div>
                         ) : (
                             <div className="border-2 border-dashed border-amber-200 rounded-2xl p-6 sm:p-8 text-center bg-amber-50/30">

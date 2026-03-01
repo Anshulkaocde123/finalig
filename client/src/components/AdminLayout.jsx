@@ -65,7 +65,7 @@ const AdminLayout = () => {
         { name: 'Scoring Presets', path: '/admin/scoring-presets', icon: Settings },
         { name: 'Admin Users', path: '/admin/users', icon: Users },
         { name: 'Student Council', path: '/admin/student-council', icon: GraduationCap },
-        { name: 'About VNIT IG', path: '/admin/about', icon: BookOpen }
+        { name: 'About Institute Gathering', path: '/admin/about', icon: BookOpen }
     ];
 
     const handleLogout = () => {
@@ -99,7 +99,7 @@ const AdminLayout = () => {
                 <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <div>
                         <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                            VNIT Sports
+                            Institute Gathering Sports
                         </h1>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Admin Dashboard</p>
                     </div>
@@ -154,7 +154,7 @@ const AdminLayout = () => {
                     >
                         <Menu className="w-5 h-5" />
                     </button>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">VNIT Sports</h2>
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">Institute Gathering Sports</h2>
                 </div>
 
                 <div className="p-4 sm:p-6 lg:p-8">

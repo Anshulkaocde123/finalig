@@ -144,7 +144,7 @@ const Login = () => {
                         <Shield className="w-7 h-7 text-blue-500" />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Login</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">VNIT Sports Officials</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Institute Gathering Sports Officials</p>
                 </div>
 
                 {/* Google Sign-In */}

@@ -3,63 +3,27 @@ const mongoose = require('mongoose');
 const highlightSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['REEL_OF_THE_DAY', 'PIC_OF_THE_DAY'],
+        enum: ['reel', 'pic'],
         required: [true, 'Highlight type is required']
     },
-    title: {
+    instagramUrl: {
         type: String,
-        required: [true, 'Title is required'],
-        trim: true,
-        maxlength: 200
+        required: [true, 'Instagram URL is required']
     },
-    description: {
+    caption: {
         type: String,
         default: '',
         maxlength: 500
     },
-    // For PIC_OF_THE_DAY - image file uploaded via multer
-    imageUrl: {
-        type: String,
-        default: ''
-    },
-    // For REEL_OF_THE_DAY - external video URL (YouTube, Instagram, etc.)
-    videoUrl: {
-        type: String,
-        default: ''
-    },
-    // The date this highlight is for
     date: {
-        type: Date,
-        required: [true, 'Date is required'],
-        default: Date.now
-    },
-    sport: {
-        type: String,
-        enum: ['CRICKET', 'BADMINTON', 'TABLE_TENNIS', 'VOLLEYBALL', 'FOOTBALL', 'HOCKEY', 'BASKETBALL', 'KHOKHO', 'KABADDI', 'CHESS', 'GENERAL', ''],
-        default: 'GENERAL'
-    },
-    // Credit/attribution
-    credit: {
-        type: String,
-        default: '',
-        maxlength: 100
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
-    // Who posted this
-    postedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Admin',
-        default: null
+        type: String, // 'YYYY-MM-DD' format
+        required: [true, 'Date is required']
     }
 }, {
     timestamps: true
 });
 
-// Index for efficient querying
-highlightSchema.index({ type: 1, date: -1 });
-highlightSchema.index({ isActive: 1, date: -1 });
+// Only one reel and one pic per day
+highlightSchema.index({ type: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model('Highlight', highlightSchema);

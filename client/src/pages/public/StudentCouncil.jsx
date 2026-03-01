@@ -50,7 +50,7 @@ const StudentCouncilPage = () => {
                     Student Council
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Leadership Behind VNIT IG
+                    Leadership Behind Institute Gathering
                 </p>
             </div>
 
