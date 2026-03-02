@@ -34,7 +34,7 @@ const awardPoints = async (req, res) => {
     }
 };
 
-// @desc    Get current standings with history
+// @desc    Get current standings (lightweight — no history)
 // @route   GET /api/leaderboard
 // @access  Public
 const getStandings = async (req, res) => {
@@ -47,7 +47,7 @@ const getStandings = async (req, res) => {
                 $group: {
                     _id: '$department',
                     points: { $sum: '$points' },
-                    history: { $push: '$$ROOT' }
+                    eventCount: { $sum: 1 }
                 }
             },
             {
@@ -74,7 +74,7 @@ const getStandings = async (req, res) => {
                     shortCode: '$deptDetails.shortCode',
                     logo: '$deptDetails.logo',
                     points: 1,
-                    history: 1
+                    eventCount: 1
                 }
             }
         ], { maxTimeMS: 10000 });
@@ -83,7 +83,7 @@ const getStandings = async (req, res) => {
         console.log(`✅ getStandings: Fetched standings in ${elapsed}ms`);
 
         // Include departments with 0 points
-        const allDepartments = await Department.find({});
+        const allDepartments = await Department.find({}).lean();
         const standingsMap = new Map(standings.map(s => [s._id.toString(), s]));
 
         const finalStandings = [];
@@ -97,7 +97,7 @@ const getStandings = async (req, res) => {
                     shortCode: dept.shortCode,
                     logo: dept.logo,
                     points: 0,
-                    history: []
+                    eventCount: 0
                 });
             }
         }

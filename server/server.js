@@ -29,6 +29,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const playerRoutes = require('./routes/playerRoutes');
 const foulRoutes = require('./routes/foulRoutes');
 const highlightRoutes = require('./routes/highlightRoutes');
+const { cacheMiddleware, clearCacheOnUpdate } = require('./utils/cache');
+const { errorHandler } = require('./middleware/errorHandler');
 
 // Connect to MongoDB asynchronously - don't block server startup
 console.log('🔄 Initiating MongoDB connection in background...');
@@ -68,6 +70,10 @@ const io = new Server(server, {
 
 // Make io accessible to routes/controllers
 app.set('io', io);
+
+// ── Global middleware (BEFORE any routes) ──
+// Compression - reduces response size by ~70%
+app.use(compression());
 
 // ULTRA-SIMPLE TEST ROUTE (Before any middleware)
 app.get('/alive', (req, res) => {
@@ -110,16 +116,20 @@ const authLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+// Relaxed limit for public GETs — campus Wi-Fi shares a single NAT IP
 const apiLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 120, // 120 requests per minute per IP
+    max: 600, // 600 req/min to accommodate 500 students behind shared NAT
     message: { message: 'Too many requests. Please slow down.' },
     standardHeaders: true,
     legacyHeaders: false,
+    // Use X-Forwarded-For so students behind same NAT aren't counted as one
+    keyGenerator: (req) => {
+        return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    },
 });
 
-// Compression middleware - reduces response size by ~70%
-app.use(compression());
+// Compression already applied above (before early routes)
 
 // Body parser middleware
 app.use(express.json());
@@ -152,36 +162,36 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Socket.io connection handling with error management
 io.on('connection', (socket) => {
-    console.log('🔌 Client connected:', socket.id);
-    connectedClients.set(socket.id, {
-        connectedAt: new Date(),
-        transport: socket.conn.transport.name
-    });
-    console.log('📊 Total connected clients:', connectedClients.size);
-
-    // Send initial connection confirmation
-    socket.emit('connected', {
-        socketId: socket.id,
-        timestamp: new Date()
-    });
-
-    socket.on('disconnect', (reason) => {
-        console.log('❌ Client disconnected:', socket.id, `(${reason})`);
-        connectedClients.delete(socket.id);
+    try {
+        console.log('🔌 Client connected:', socket.id);
+        connectedClients.set(socket.id, {
+            connectedAt: new Date(),
+            transport: socket.conn.transport.name
+        });
         console.log('📊 Total connected clients:', connectedClients.size);
-    });
 
-    socket.on('connect_error', (error) => {
-        console.error('❌ Socket connection error:', error.message);
-    });
+        // Send initial connection confirmation
+        socket.emit('connected', {
+            socketId: socket.id,
+            timestamp: new Date()
+        });
 
-    socket.on('error', (error) => {
-        console.error('❌ Socket error:', socket.id, error);
-    });
+        socket.on('disconnect', (reason) => {
+            console.log('❌ Client disconnected:', socket.id, `(${reason})`);
+            connectedClients.delete(socket.id);
+            console.log('📊 Total connected clients:', connectedClients.size);
+        });
 
-    socket.on('ping', () => {
-        socket.emit('pong');
-    });
+        socket.on('error', (error) => {
+            console.error('❌ Socket error:', socket.id, error?.message || error);
+        });
+
+        socket.on('ping', () => {
+            socket.emit('pong');
+        });
+    } catch (err) {
+        console.error('❌ Error in socket connection handler:', err?.message || err);
+    }
 });
 
 // Socket.io server error handling
@@ -239,18 +249,18 @@ app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
 console.log('📍 Auth routes mounted (rate-limited)');
 app.use('/api/matches', apiLimiter, matchRoutes);
 console.log('📍 Matches routes mounted');
-app.use('/api/departments', departmentRoutes);
-console.log('📍 Departments routes mounted');
-app.use('/api/leaderboard', leaderboardRoutes);
-console.log('📍 Leaderboard routes mounted');
-app.use('/api/seasons', seasonRoutes);
-console.log('📍 Seasons routes mounted');
+app.use('/api/departments', cacheMiddleware(300), departmentRoutes);
+console.log('📍 Departments routes mounted (cached 5min)');
+app.use('/api/leaderboard', cacheMiddleware(30), leaderboardRoutes);
+console.log('📍 Leaderboard routes mounted (cached 30s)');
+app.use('/api/seasons', cacheMiddleware(300), seasonRoutes);
+console.log('📍 Seasons routes mounted (cached 5min)');
 app.use('/api/scoring-presets', scoringPresetRoutes);
 console.log('📍 Scoring presets routes mounted');
-app.use('/api/student-council', studentCouncilRoutes);
-console.log('📍 Student council routes mounted');
-app.use('/api/about', aboutRoutes);
-console.log('📍 About routes mounted');
+app.use('/api/student-council', cacheMiddleware(300), studentCouncilRoutes);
+console.log('📍 Student council routes mounted (cached 5min)');
+app.use('/api/about', cacheMiddleware(300), aboutRoutes);
+console.log('📍 About routes mounted (cached 5min)');
 app.use('/api/admins', adminRoutes);
 console.log('📍 Admin management routes mounted');
 app.use('/api/players', playerRoutes);
@@ -260,15 +270,8 @@ console.log('📍 Foul routes mounted');
 app.use('/api/highlights', highlightRoutes);
 console.log('📍 Highlight routes mounted');
 
-// Error handler middleware
-app.use((err, req, res, next) => {
-    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-    res.status(statusCode).json({
-        success: false,
-        message: err.message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack
-    });
-});
+// Error handler middleware — use the robust handler with Mongoose/JWT parsing
+app.use(errorHandler);
 
 // React fallback for client-side routing - AFTER all API routes
 if (process.env.NODE_ENV === 'production') {

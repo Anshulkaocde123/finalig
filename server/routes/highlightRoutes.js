@@ -19,7 +19,8 @@ router.get('/', async (req, res) => {
 // GET today's highlights (for public home page)
 router.get('/today', async (req, res) => {
     try {
-        const today = new Date().toISOString().split('T')[0];
+        // Use IST (Asia/Kolkata) to avoid UTC offset issues around midnight
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
         const [reel, pic] = await Promise.all([
             Highlight.findOne({ type: 'reel', date: today }).lean(),

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Film, Camera, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
-import { useSocket } from '../context/SocketContext';
+import socket from '../socket';
 
 const InstagramEmbed = ({ url, type }) => {
     const [embedHtml, setEmbedHtml] = useState('');
@@ -59,10 +59,24 @@ const InstagramEmbed = ({ url, type }) => {
         );
     }
 
+    // Sanitize oEmbed HTML: only allow Instagram blockquote/iframe elements
+    const sanitizeEmbedHtml = (html) => {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        // Remove all <script> tags injected by oEmbed
+        div.querySelectorAll('script').forEach(s => s.remove());
+        // Only keep blockquote and iframe (Instagram embed elements)
+        const allowed = div.querySelectorAll('blockquote, iframe');
+        if (allowed.length === 0) return '';
+        const safe = document.createElement('div');
+        allowed.forEach(el => safe.appendChild(el.cloneNode(true)));
+        return safe.innerHTML;
+    };
+
     return (
         <div
             className="instagram-embed-container overflow-hidden rounded-lg flex justify-center"
-            dangerouslySetInnerHTML={{ __html: embedHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeEmbedHtml(embedHtml) }}
         />
     );
 };
@@ -72,7 +86,7 @@ const Highlights = () => {
     const [availableDates, setAvailableDates] = useState([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const { socket } = useSocket() || {};
+    // Use the singleton socket instance (no SocketContext needed)
 
     const fetchHighlights = useCallback(async (date) => {
         try {
@@ -98,10 +112,8 @@ const Highlights = () => {
         fetchDates();
     }, [selectedDate, fetchHighlights, fetchDates]);
 
-    // Listen for real-time updates
+    // Listen for real-time updates via singleton socket
     useEffect(() => {
-        if (!socket) return;
-
         const handler = (payload) => {
             if (payload?.date === selectedDate) {
                 fetchHighlights(selectedDate);
@@ -110,8 +122,14 @@ const Highlights = () => {
         };
 
         socket.on('highlightUpdated', handler);
-        return () => socket.off('highlightUpdated', handler);
-    }, [socket, selectedDate, fetchHighlights, fetchDates]);
+        socket.on('highlightCreated', handler);
+        socket.on('highlightDeleted', handler);
+        return () => {
+            socket.off('highlightUpdated', handler);
+            socket.off('highlightCreated', handler);
+            socket.off('highlightDeleted', handler);
+        };
+    }, [selectedDate, fetchHighlights, fetchDates]);
 
     const reel = highlights.find(h => h.type === 'reel');
     const pic = highlights.find(h => h.type === 'pic');

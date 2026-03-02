@@ -72,7 +72,14 @@ const MatchDetail = () => {
 
             <div className="max-w-2xl mx-auto px-4 pt-20 pb-12">
                 {/* Back Button */}
-                <button onClick={() => navigate(-1)}
+                <button onClick={() => {
+                        // If there's browser history, go back; otherwise go home
+                        if (window.history.length > 1) {
+                            navigate(-1);
+                        } else {
+                            navigate('/');
+                        }
+                    }}
                     className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mb-6 transition-colors">
                     <ArrowLeft className="w-4 h-4" /> Back to matches
                 </button>

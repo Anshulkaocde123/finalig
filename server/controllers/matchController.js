@@ -263,7 +263,22 @@ const updateMatch = asyncHandler(async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-        io.emit('matchUpdate', populatedMatch);
+        // Emit only essential fields to reduce broadcast payload
+        io.emit('matchUpdate', {
+            _id: populatedMatch._id,
+            sport: populatedMatch.sport,
+            status: populatedMatch.status,
+            scoreA: populatedMatch.scoreA,
+            scoreB: populatedMatch.scoreB,
+            summary: populatedMatch.summary,
+            winner: populatedMatch.winner,
+            teamA: populatedMatch.teamA,
+            teamB: populatedMatch.teamB,
+            matchCategory: populatedMatch.matchCategory,
+            scheduledAt: populatedMatch.scheduledAt,
+            venue: populatedMatch.venue,
+            updatedAt: populatedMatch.updatedAt
+        });
     }
 
     res.json({ success: true, data: populatedMatch });

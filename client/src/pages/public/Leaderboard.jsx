@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
 import PublicNavbar from '../../components/PublicNavbar';
 import { Trophy } from 'lucide-react';
@@ -7,6 +7,7 @@ import socket from '../../socket';
 const Leaderboard = () => {
     const [standings, setStandings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const debounceRef = useRef(null);
 
     useEffect(() => {
         fetchStandings();
@@ -14,12 +15,20 @@ const Leaderboard = () => {
         // Real-time: refresh leaderboard when admin awards points or resets
         socket.on('pointsAwarded', fetchStandings);
         socket.on('leaderboardReset', fetchStandings);
-        socket.on('matchUpdate', fetchStandings);
+
+        // Debounce matchUpdate — scores change frequently but leaderboard
+        // only needs to refresh when a match completes (points change)
+        const debouncedFetch = () => {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(fetchStandings, 3000);
+        };
+        socket.on('matchUpdate', debouncedFetch);
 
         return () => {
+            clearTimeout(debounceRef.current);
             socket.off('pointsAwarded', fetchStandings);
             socket.off('leaderboardReset', fetchStandings);
-            socket.off('matchUpdate', fetchStandings);
+            socket.off('matchUpdate', debouncedFetch);
         };
     }, []);
 
@@ -119,6 +128,7 @@ const Leaderboard = () => {
                                                 <img
                                                     src={getLogoUrl(deptLogo)}
                                                     alt={deptName}
+                                                    loading="lazy"
                                                     className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
                                                     onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = `<span class="text-xs font-bold text-blue-600">${deptCode?.slice(0, 2)}</span>`; }}
                                                 />

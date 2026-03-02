@@ -6,7 +6,7 @@ const isDev = import.meta.env.DEV;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
     || (isDev ? 'http://localhost:5000' : window.location.origin);
 
-console.log('🔌 Socket connecting to:', SOCKET_URL);
+if (isDev) console.log('🔌 Socket connecting to:', SOCKET_URL);
 
 export const socket = io(SOCKET_URL, {
     autoConnect: true,
@@ -26,39 +26,25 @@ export const socket = io(SOCKET_URL, {
     pingInterval: 25000
 });
 
-// Connection event handlers
-socket.on('connect', () => {
-    console.log('✅ Socket.io connected:', socket.id);
-    console.log('🔌 Transport:', socket.io.engine.transport.name);
-});
+// Connection event handlers (dev-only logging)
+if (isDev) {
+    socket.on('connect', () => {
+        console.log('✅ Socket.io connected:', socket.id);
+        console.log('🔌 Transport:', socket.io.engine.transport.name);
+    });
 
-socket.on('reconnect_attempt', (attemptNumber) => {
-    console.log('🔄 Reconnection attempt:', attemptNumber);
-});
+    socket.on('reconnect_attempt', (n) => console.log('🔄 Reconnection attempt:', n));
+    socket.on('reconnect', (n) => console.log('✅ Socket.io reconnected after', n, 'attempts'));
+    socket.on('reconnect_failed', () => console.error('❌ Socket reconnection failed after all attempts'));
+    socket.on('connect_error', (error) => console.error('❌ Socket connection error:', error.message));
+    socket.on('disconnect', (reason) => console.warn('⚠️  Socket disconnected:', reason));
+}
 
-socket.on('reconnect', (attemptNumber) => {
-    console.log('✅ Socket.io reconnected after', attemptNumber, 'attempts');
-});
-
-socket.on('reconnect_failed', () => {
-    console.error('❌ Socket reconnection failed after all attempts');
-});
-
-socket.on('connect_error', (error) => {
-    console.error('❌ Socket connection error:', error.message);
-});
-
+// Always handle server-initiated disconnect (reconnect automatically)
 socket.on('disconnect', (reason) => {
-    console.warn('⚠️  Socket disconnected:', reason);
     if (reason === 'io server disconnect') {
-        // Server initiated disconnect, manually reconnect
-        console.log('🔄 Attempting manual reconnection...');
         socket.connect();
     }
-});
-
-socket.on('error', (error) => {
-    console.error('❌ Socket error:', error);
 });
 
 export default socket;

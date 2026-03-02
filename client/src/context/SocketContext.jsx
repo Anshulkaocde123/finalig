@@ -1,56 +1,36 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
+/**
+ * SocketContext — thin wrapper around the singleton socket instance.
+ *
+ * Instead of creating a second socket.io connection (which wastes
+ * bandwidth and causes duplicate events), this re-exports the
+ * single connection from ../socket.js so every component gets the
+ * same reference via useSocket().
+ */
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import socket from '../socket';
 
 const SocketContext = createContext(null);
 
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
-    const socketRef = useRef(null);
-    const [isConnected, setIsConnected] = useState(false);
+    const [isConnected, setIsConnected] = useState(socket.connected);
 
     useEffect(() => {
-        // Determine URL based on environment
-        const URL = import.meta.env.PROD
-            ? window.location.origin
-            : 'http://localhost:5001';
+        const onConnect = () => setIsConnected(true);
+        const onDisconnect = () => setIsConnected(false);
 
-        const socket = io(URL, {
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
-            reconnectionDelayMax: 10000,
-            timeout: 20000,
-            autoConnect: true,
-        });
-
-        socket.on('connect', () => {
-            console.log('Socket connected:', socket.id);
-            setIsConnected(true);
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.log('Socket disconnected:', reason);
-            setIsConnected(false);
-        });
-
-        socket.on('connect_error', (err) => {
-            console.warn('Socket connection error:', err.message);
-            setIsConnected(false);
-        });
-
-        socketRef.current = socket;
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
 
         return () => {
-            socket.removeAllListeners();
-            socket.disconnect();
-            socketRef.current = null;
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
         };
     }, []);
 
     return (
-        <SocketContext.Provider value={{ socket: socketRef.current, isConnected }}>
+        <SocketContext.Provider value={{ socket, isConnected }}>
             {children}
         </SocketContext.Provider>
     );
