@@ -70,7 +70,7 @@ const ScheduleMatch = () => {
     const teamBDept = departments.find(d => d._id === formData.teamB);
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6">
+        <div className="min-h-screen bg-slate-50 p-3 sm:p-6">
             <div className="max-w-2xl mx-auto">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -80,7 +80,7 @@ const ScheduleMatch = () => {
                     <p className="text-sm text-slate-500 mt-1">Create a new match fixture</p>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-xl p-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Sport Selection */}
                         <div>
@@ -94,22 +94,22 @@ const ScheduleMatch = () => {
                         </div>
 
                         {/* VS Display */}
-                        <div className="flex items-center justify-center gap-3 py-4">
-                            <div className="flex-1 text-center p-3 rounded-lg bg-blue-50 border border-blue-200">
-                                <div className="text-2xl font-bold text-blue-600">{teamADept?.shortCode || '?'}</div>
-                                <div className="text-xs text-slate-500 mt-0.5">{teamADept?.name || 'Team A'}</div>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 py-4">
+                            <div className="w-full sm:flex-1 text-center p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                <div className="text-xl sm:text-2xl font-bold text-blue-600">{teamADept?.shortCode || '?'}</div>
+                                <div className="text-xs text-slate-500 mt-0.5 truncate">{teamADept?.name || 'Team A'}</div>
                             </div>
-                            <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
                                 <span className="text-slate-600 font-bold text-sm">VS</span>
                             </div>
-                            <div className="flex-1 text-center p-3 rounded-lg bg-slate-100 border border-slate-200">
-                                <div className="text-2xl font-bold text-slate-700">{teamBDept?.shortCode || '?'}</div>
-                                <div className="text-xs text-slate-500 mt-0.5">{teamBDept?.name || 'Team B'}</div>
+                            <div className="w-full sm:flex-1 text-center p-3 rounded-lg bg-slate-100 border border-slate-200">
+                                <div className="text-xl sm:text-2xl font-bold text-slate-700">{teamBDept?.shortCode || '?'}</div>
+                                <div className="text-xs text-slate-500 mt-0.5 truncate">{teamBDept?.name || 'Team B'}</div>
                             </div>
                         </div>
 
                         {/* Teams Selection */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Team A</label>
                                 <select name="teamA" value={formData.teamA} onChange={handleChange}
@@ -130,7 +130,7 @@ const ScheduleMatch = () => {
 
                         {/* Category, Venue & Date */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1">
+                            <label className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1">
                                 <Trophy className="w-3 h-3" /> Match Category
                             </label>
                             <select name="matchCategory" value={formData.matchCategory} onChange={handleChange}
@@ -139,14 +139,14 @@ const ScheduleMatch = () => {
                             </select>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1"><MapPin className="w-3 h-3" /> Venue</label>
+                                <label className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1"><MapPin className="w-3 h-3" /> Venue</label>
                                 <input type="text" name="venue" value={formData.venue} onChange={handleChange} placeholder="Main Ground"
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1"><Clock className="w-3 h-3" /> Date & Time</label>
+                                <label className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1"><Clock className="w-3 h-3" /> Date & Time</label>
                                 <input type="datetime-local" name="scheduledAt" value={formData.scheduledAt} onChange={handleChange}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
                             </div>

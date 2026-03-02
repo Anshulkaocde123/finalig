@@ -94,7 +94,7 @@ const AdvancedMatchFilter = ({ onFilter }) => {
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-4 border border-slate-700">
             {/* Debug Info */}
             {process.env.NODE_ENV === 'development' && (
-                <div className="text-sm font-semibold text-gray-700 mb-2">
+                <div className="text-sm font-semibold text-gray-400 mb-2">
                     Departments: {departments.length} | Seasons: {seasons.length} | API: {api.defaults.baseURL}
                 </div>
             )}
@@ -112,7 +112,7 @@ const AdvancedMatchFilter = ({ onFilter }) => {
                 <select
                     value={filters.status}
                     onChange={(e) => handleFilterChange('status', e.target.value)}
-                    className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-indigo-500 outline-none"
+                    className="w-full md:w-auto px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-indigo-500 outline-none"
                 >
                     <option value="">All Status</option>
                     {STATUSES.map(s => (
@@ -122,7 +122,7 @@ const AdvancedMatchFilter = ({ onFilter }) => {
                 <select
                     value={filters.sport}
                     onChange={(e) => handleFilterChange('sport', e.target.value)}
-                    className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-indigo-500 outline-none"
+                    className="w-full md:w-auto px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-indigo-500 outline-none"
                 >
                     <option value="">All Sports</option>
                     {SPORTS.map(s => (

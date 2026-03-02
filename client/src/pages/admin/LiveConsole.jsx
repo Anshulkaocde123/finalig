@@ -85,31 +85,31 @@ const LiveConsole = () => {
     const getTeamName = (team) => team?.shortCode || team?.name || 'TBD';
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <Trophy className="w-6 h-6 text-amber-500" />
                         Match Manager
                     </h1>
-                    <p className="text-sm text-slate-500 mt-1">Update scores and results for completed matches</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Update scores and results for completed matches</p>
                 </div>
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3 mb-6">
-                    <div className="flex items-center gap-2 flex-1 min-w-48 bg-white border border-slate-200 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
                         <Search className="w-4 h-4 text-slate-400" />
                         <input type="text" placeholder="Search teams..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1 outline-none text-sm text-slate-900 placeholder-slate-400 bg-transparent" />
+                            className="flex-1 outline-none text-sm text-slate-900 dark:text-white placeholder-slate-400 bg-transparent" />
                     </div>
                     <select value={filterSport} onChange={(e) => setFilterSport(e.target.value)}
-                        className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none">
+                        className="w-full sm:w-auto px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 outline-none">
                         <option value="ALL">All Sports</option>
                         {Object.entries(SPORT_ICONS).map(([k, v]) => <option key={k} value={k}>{v} {k}</option>)}
                     </select>
                     <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-                        className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none">
+                        className="w-full sm:w-auto px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 outline-none">
                         <option value="ALL">All Status</option>
                         <option value="SCHEDULED">Scheduled</option>
                         <option value="COMPLETED">Completed</option>
@@ -120,9 +120,9 @@ const LiveConsole = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
                     {[
-                        { label: 'Total', count: matches.length, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-                        { label: 'Scheduled', count: matches.filter(m => m.status === 'SCHEDULED').length, color: 'bg-amber-50 text-amber-700 border-amber-200' },
-                        { label: 'Completed', count: matches.filter(m => m.status === 'COMPLETED').length, color: 'bg-green-50 text-green-700 border-green-200' }
+                        { label: 'Total', count: matches.length, color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
+                        { label: 'Scheduled', count: matches.filter(m => m.status === 'SCHEDULED').length, color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' },
+                        { label: 'Completed', count: matches.filter(m => m.status === 'COMPLETED').length, color: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' }
                     ].map(stat => (
                         <div key={stat.label} className={`p-3 rounded-lg border text-center ${stat.color}`}>
                             <div className="text-2xl font-bold">{stat.count}</div>
@@ -147,14 +147,14 @@ const LiveConsole = () => {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
 
                                     {/* Match Header */}
                                     <div className="p-4">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-lg">{SPORT_ICONS[match.sport] || '🏅'}</span>
-                                                <span className="text-sm font-medium text-slate-700">{match.sport}</span>
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{match.sport}</span>
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_COLORS[match.status] || ''}`}>
                                                     {match.status}
                                                 </span>
@@ -166,11 +166,11 @@ const LiveConsole = () => {
                                             </div>
                                             <div className="flex gap-1">
                                                 <button onClick={() => editingMatch === match._id ? cancelEdit() : startEdit(match)}
-                                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
+                                                    className="p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">
                                                     {editingMatch === match._id ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
                                                 </button>
                                                 <button onClick={() => deleteMatch(match._id)}
-                                                    className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors">
+                                                    className="p-2.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400 hover:text-red-600 transition-colors">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -179,14 +179,14 @@ const LiveConsole = () => {
                                         {/* Teams Display */}
                                         <div className="flex items-center justify-between">
                                             <div className="flex-1 text-center">
-                                                <div className={`text-xl font-bold ${match.winner && (match.winner._id || match.winner) === (match.teamA?._id) ? 'text-green-600' : 'text-slate-800'}`}>
+                                                <div className={`text-xl font-bold ${match.winner && (match.winner._id || match.winner) === (match.teamA?._id) ? 'text-green-600 dark:text-green-400' : 'text-slate-800 dark:text-white'}`}>
                                                     {getTeamName(match.teamA)}
                                                 </div>
                                                 {match.scoreA && <div className="text-lg font-semibold text-blue-600 mt-0.5">{match.scoreA}</div>}
                                             </div>
-                                            <div className="px-4 text-slate-400 font-bold text-sm">VS</div>
+                                            <div className="px-4 text-slate-400 dark:text-slate-500 font-bold text-sm">VS</div>
                                             <div className="flex-1 text-center">
-                                                <div className={`text-xl font-bold ${match.winner && (match.winner._id || match.winner) === (match.teamB?._id) ? 'text-green-600' : 'text-slate-800'}`}>
+                                                <div className={`text-xl font-bold ${match.winner && (match.winner._id || match.winner) === (match.teamB?._id) ? 'text-green-600 dark:text-green-400' : 'text-slate-800 dark:text-white'}`}>
                                                     {getTeamName(match.teamB)}
                                                 </div>
                                                 {match.scoreB && <div className="text-lg font-semibold text-blue-600 mt-0.5">{match.scoreB}</div>}
@@ -210,43 +210,43 @@ const LiveConsole = () => {
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: 'auto', opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
-                                                className="border-t border-slate-200 overflow-hidden">
-                                                <div className="p-4 bg-slate-50 space-y-3">
+                                                className="border-t border-slate-200 dark:border-slate-700 overflow-hidden">
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 space-y-3">
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
-                                                            <label className="block text-xs font-medium text-slate-600 mb-1">
+                                                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                                                                 {getTeamName(match.teamA)} Score
                                                             </label>
                                                             <input type="text" value={editForm.scoreA} placeholder="e.g. 156/4, 3-1"
                                                                 onChange={(e) => setEditForm(prev => ({ ...prev, scoreA: e.target.value }))}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
                                                         </div>
                                                         <div>
-                                                            <label className="block text-xs font-medium text-slate-600 mb-1">
+                                                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                                                                 {getTeamName(match.teamB)} Score
                                                             </label>
                                                             <input type="text" value={editForm.scoreB} placeholder="e.g. 142/8, 2-1"
                                                                 onChange={(e) => setEditForm(prev => ({ ...prev, scoreB: e.target.value }))}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
                                                         </div>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
-                                                            <label className="block text-xs font-medium text-slate-600 mb-1">Winner</label>
+                                                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Winner</label>
                                                             <select value={editForm.winner}
                                                                 onChange={(e) => setEditForm(prev => ({ ...prev, winner: e.target.value }))}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500">
                                                                 <option value="">No winner yet</option>
                                                                 <option value={match.teamA?._id}>{getTeamName(match.teamA)}</option>
                                                                 <option value={match.teamB?._id}>{getTeamName(match.teamB)}</option>
                                                             </select>
                                                         </div>
                                                         <div>
-                                                            <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                                                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Status</label>
                                                             <select value={editForm.status}
                                                                 onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500">
                                                                 <option value="SCHEDULED">Scheduled</option>
                                                                 <option value="COMPLETED">Completed</option>
                                                                 <option value="CANCELLED">Cancelled</option>
@@ -255,11 +255,11 @@ const LiveConsole = () => {
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-xs font-medium text-slate-600 mb-1">Summary (optional)</label>
+                                                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Summary (optional)</label>
                                                         <input type="text" value={editForm.summary}
                                                             placeholder="e.g. CSE won by 14 runs"
                                                             onChange={(e) => setEditForm(prev => ({ ...prev, summary: e.target.value }))}
-                                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500" />
                                                     </div>
 
                                                     <div className="flex gap-2 pt-1">

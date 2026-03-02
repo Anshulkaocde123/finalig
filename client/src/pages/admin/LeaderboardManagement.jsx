@@ -78,7 +78,7 @@ const LeaderboardManagement = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 md:p-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-3 sm:p-6 md:p-8">
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
@@ -138,29 +138,30 @@ const LeaderboardManagement = () => {
                                 <React.Fragment key={dept._id}>
                                     <div
                                         onClick={() => history.length > 0 && toggleRow(dept._id)}
-                                        className={`p-4 md:p-6 transition-colors ${history.length > 0 ? 'cursor-pointer' : ''} hover:bg-slate-50 dark:hover:bg-slate-900`}
+                                        className={`p-3 sm:p-4 md:p-6 transition-colors ${history.length > 0 ? 'cursor-pointer' : ''} hover:bg-slate-50 dark:hover:bg-slate-900`}
                                     >
-                                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                                        <div className="flex items-center justify-between gap-3 sm:gap-4">
                                             {/* Rank and Name */}
-                                            <div className="flex items-center gap-4 flex-1 min-w-[200px]">
-                                                <div className={`${idx < 3 ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'} rounded-full w-14 h-14 flex items-center justify-center font-bold text-xl text-white`}>
+                                            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                                                <div className={`${idx < 3 ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'} rounded-full w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center font-bold text-base sm:text-xl text-white flex-shrink-0`}>
                                                     {getRankBadge(idx + 1)}
                                                 </div>
-                                                <div>
-                                                    <div className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Position {idx + 1}</div>
-                                                    <div className="text-xl font-bold text-slate-800 dark:text-white">{dept.name}</div>
-                                                    <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">({dept.shortCode})</div>
+                                                <div className="min-w-0">
+                                                    <div className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Position {idx + 1}</div>
+                                                    <div className="text-sm sm:text-xl font-bold text-slate-800 dark:text-white truncate">{dept.name}</div>
+                                                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">({dept.shortCode})</div>
                                                 </div>
                                             </div>
 
                                             {/* Points Display */}
-                                            <div className="text-right">
-                                                <div className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Points</div>
-                                                <div className="text-4xl font-bold text-blue-500">{dept.points}</div>
+                                            <div className="text-right flex-shrink-0">
+                                                <div className="hidden sm:block text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Points</div>
+                                                <div className="text-2xl sm:text-4xl font-bold text-blue-500 tabular-nums">{dept.points}</div>
+                                                <div className="sm:hidden text-[10px] text-slate-400">pts</div>
                                             </div>
 
                                             {/* Expand indicator + Admin Actions */}
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                                                 {history.length > 0 && (
                                                     <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                                 )}
@@ -178,7 +179,7 @@ const LeaderboardManagement = () => {
 
                                     {/* Expanded Points History */}
                                     {isExpanded && history.length > 0 && (
-                                        <div className="px-6 pb-6 bg-slate-50 dark:bg-slate-900/50">
+                                        <div className="px-3 sm:px-6 pb-4 sm:pb-6 bg-slate-50 dark:bg-slate-900/50">
                                             <div className="p-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                                 <h4 className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
                                                     Points History

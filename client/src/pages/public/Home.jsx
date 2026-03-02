@@ -8,6 +8,14 @@ import { SPORT_ICONS, SPORTS } from '../../lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Film, Trophy, Sparkles, RefreshCw, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Timezone-safe local date helper (avoids UTC offset issues with toISOString)
+const getLocalDateStr = (date = new Date()) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
 const Home = () => {
     const [matches, setMatches] = useState([]);
     const [highlights, setHighlights] = useState({});
@@ -16,11 +24,11 @@ const Home = () => {
     const [selectedSport, setSelectedSport] = useState('ALL');
     const [selectedStatus, setSelectedStatus] = useState('ALL');
     const [lastUpdated, setLastUpdated] = useState(null);
-    const [highlightDate, setHighlightDate] = useState(new Date().toISOString().split('T')[0]);
+    const [highlightDate, setHighlightDate] = useState(getLocalDateStr());
     const [availableDates, setAvailableDates] = useState([]);
     const debounceRef = useRef(null);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
 
     const fetchHighlightsForDate = useCallback(async (date) => {
         try {
@@ -146,9 +154,9 @@ const Home = () => {
     }, [highlightDate, fetchHighlightsForDate]);
 
     const shiftDate = (days) => {
-        const d = new Date(highlightDate);
+        const d = new Date(highlightDate + 'T12:00:00'); // noon to avoid DST edge cases
         d.setDate(d.getDate() + days);
-        const newDate = d.toISOString().split('T')[0];
+        const newDate = getLocalDateStr(d);
         if (newDate <= todayStr) {
             setHighlightDate(newDate);
         }
@@ -158,7 +166,7 @@ const Home = () => {
         if (dateStr === todayStr) return 'Today';
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        if (dateStr === yesterday.toISOString().split('T')[0]) return 'Yesterday';
+        if (dateStr === getLocalDateStr(yesterday)) return 'Yesterday';
         return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
@@ -216,7 +224,7 @@ const Home = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.08 }}
-                            className="relative overflow-hidden bg-white border border-slate-200 rounded-xl p-3 sm:p-4 text-center hover:shadow-md transition-shadow">
+                            className="relative overflow-hidden bg-white border border-slate-200 rounded-xl p-3 sm:p-4 text-center">
                             <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stat.color}`} />
                             <div className="text-lg sm:text-xl mb-0.5">{stat.icon}</div>
                             <div className="text-xl sm:text-2xl font-bold text-slate-900">{loading ? '-' : stat.value}</div>
@@ -248,37 +256,39 @@ const Home = () => {
                         )}
                     </div>
 
-                    {/* Date Selector */}
-                    <div className="flex items-center justify-center gap-3 mb-5">
+                    {/* Date Selector — responsive, never overflows */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-5">
                         <button
                             onClick={() => shiftDate(-1)}
-                            className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-500 transition-colors"
+                            className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-500 transition-colors flex-shrink-0"
+                            aria-label="Previous day"
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                             <input
                                 type="date"
                                 value={highlightDate}
                                 max={todayStr}
                                 onChange={(e) => setHighlightDate(e.target.value)}
-                                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                className="px-2 sm:px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer max-w-[150px] sm:max-w-none"
                             />
-                            <span className="text-sm font-medium text-slate-600">
+                            <span className="text-xs sm:text-sm font-semibold text-slate-700 whitespace-nowrap">
                                 {formatDisplayDate(highlightDate)}
                             </span>
                         </div>
                         <button
                             onClick={() => shiftDate(1)}
                             disabled={highlightDate >= todayStr}
-                            className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                            aria-label="Next day"
                         >
                             <ChevronRight className="w-4 h-4" />
                         </button>
                         {highlightDate !== todayStr && (
                             <button
                                 onClick={() => setHighlightDate(todayStr)}
-                                className="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors flex-shrink-0"
                             >
                                 Today
                             </button>

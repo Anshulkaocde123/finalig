@@ -42,20 +42,20 @@ const MatchDetail = () => {
     };
 
     if (loading) return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
             <PublicNavbar />
             <div className="flex items-center justify-center pt-32">
-                <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
         </div>
     );
 
     if (error || !match) return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
             <PublicNavbar />
             <div className="flex flex-col items-center justify-center pt-32">
                 <p className="text-4xl mb-3">😕</p>
-                <p className="text-slate-500">{error || 'Match not found'}</p>
+                <p className="text-slate-500 dark:text-slate-400">{error || 'Match not found'}</p>
                 <button onClick={() => navigate('/')} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">
                     Go Home
                 </button>
@@ -66,20 +66,20 @@ const MatchDetail = () => {
     const isCompleted = match.status === 'COMPLETED';
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
             <PublicNavbar />
 
             <div className="max-w-2xl mx-auto px-4 pt-20 pb-12">
                 {/* Back Button */}
                 <button onClick={() => navigate(-1)}
-                    className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors">
+                    className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mb-6 transition-colors">
                     <ArrowLeft className="w-4 h-4" /> Back to matches
                 </button>
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm">
 
                     {/* Header — sport-colored */}
                     <div className="p-5 text-white text-center"
@@ -109,10 +109,10 @@ const MatchDetail = () => {
                         <div className="flex items-center justify-between py-6">
                             {/* Team A */}
                             <div className="flex-1 text-center">
-                                <div className={`text-3xl font-bold mb-1 ${isWinner(match.teamA) ? 'text-green-600' : 'text-slate-800'}`}>
+                                <div className={`text-2xl sm:text-3xl font-bold mb-1 truncate ${isWinner(match.teamA) ? 'text-green-600 dark:text-green-400' : 'text-slate-800 dark:text-white'}`}>
                                     {getTeamShort(match.teamA)}
                                 </div>
-                                <div className="text-xs text-slate-500 mb-2">{getTeamName(match.teamA)}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">{getTeamName(match.teamA)}</div>
                                 {isCompleted && match.scoreA && (
                                     <div className="text-2xl font-bold text-blue-600">{match.scoreA}</div>
                                 )}
@@ -124,19 +124,18 @@ const MatchDetail = () => {
                                 )}
                             </div>
 
-                            {/* VS */}
-                            <div className="px-6">
-                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-                                    <span className="text-sm font-bold text-slate-400">VS</span>
+                            <div className="px-4 sm:px-6">
+                                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                                    <span className="text-sm font-bold text-slate-500 dark:text-slate-300">VS</span>
                                 </div>
                             </div>
 
                             {/* Team B */}
                             <div className="flex-1 text-center">
-                                <div className={`text-3xl font-bold mb-1 ${isWinner(match.teamB) ? 'text-green-600' : 'text-slate-800'}`}>
+                                <div className={`text-2xl sm:text-3xl font-bold mb-1 truncate ${isWinner(match.teamB) ? 'text-green-600 dark:text-green-400' : 'text-slate-800 dark:text-white'}`}>
                                     {getTeamShort(match.teamB)}
                                 </div>
-                                <div className="text-xs text-slate-500 mb-2">{getTeamName(match.teamB)}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">{getTeamName(match.teamB)}</div>
                                 {isCompleted && match.scoreB && (
                                     <div className="text-2xl font-bold text-blue-600">{match.scoreB}</div>
                                 )}
@@ -151,38 +150,38 @@ const MatchDetail = () => {
 
                         {/* Summary */}
                         {match.summary && (
-                            <div className="text-center py-3 px-4 bg-slate-50 rounded-xl mb-4">
-                                <p className="text-sm text-slate-600 italic">{match.summary}</p>
+                            <div className="text-center py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl mb-4">
+                                <p className="text-sm text-slate-600 dark:text-slate-300 italic">{match.summary}</p>
                             </div>
                         )}
 
                         {/* Match Details */}
-                        <div className="border-t border-slate-100 pt-4 space-y-2.5">
+                        <div className="border-t border-slate-100 dark:border-slate-700 pt-4 space-y-2.5">
                             {match.venue && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <MapPin className="w-4 h-4 text-slate-400" />
+                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                    <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                     <span>{match.venue}</span>
                                 </div>
                             )}
                             {match.scheduledAt && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Calendar className="w-4 h-4 text-slate-400" />
+                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                    <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                     <span>{new Date(match.scheduledAt).toLocaleDateString('en-IN', {
                                         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                                     })}</span>
                                 </div>
                             )}
                             {match.scheduledAt && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Clock className="w-4 h-4 text-slate-400" />
+                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                    <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                     <span>{new Date(match.scheduledAt).toLocaleTimeString('en-IN', {
                                         hour: 'numeric', minute: '2-digit', hour12: true
                                     })}</span>
                                 </div>
                             )}
                             {match.matchCategory && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Tag className="w-4 h-4 text-slate-400" />
+                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                    <Tag className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                     <span>{match.matchCategory.replace('_', ' ')}</span>
                                 </div>
                             )}

@@ -58,13 +58,13 @@ const Dashboard = () => {
     const getStatusBadge = (status) => {
         switch (status) {
             case 'COMPLETED':
-                return <span className="px-2 py-0.5 bg-green-100 text-green-600 text-xs font-medium rounded-full">Completed</span>;
+                return <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">Completed</span>;
             case 'SCHEDULED':
-                return <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">Upcoming</span>;
+                return <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-full">Upcoming</span>;
             case 'CANCELLED':
-                return <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">Cancelled</span>;
+                return <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">Cancelled</span>;
             default:
-                return <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">{status}</span>;
+                return <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-full">{status}</span>;
         }
     };
 
@@ -84,7 +84,7 @@ const Dashboard = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen bg-slate-50 dark:bg-slate-900">
+            <div className="flex justify-center items-center h-64 bg-slate-50 dark:bg-slate-900">
                 <div className="text-center">
                     <div className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-blue-500 mx-auto mb-4 animate-spin"></div>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>

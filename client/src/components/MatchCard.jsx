@@ -97,13 +97,13 @@ const MatchCard = ({ match }) => {
 
             {/* Summary */}
             {match.summary && (
-                <div className="text-xs text-slate-500 text-center mt-1 italic line-clamp-1">{match.summary}</div>
+                <div className="text-xs text-slate-500 text-center mt-1 italic line-clamp-2">{match.summary}</div>
             )}
 
             {/* Footer: Venue + Date */}
             <div className="flex items-center justify-center gap-3 mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-400">
                 {match.venue && (
-                    <span className="flex items-center gap-1 truncate max-w-[120px]">
+                    <span className="flex items-center gap-1 truncate max-w-[55%]">
                         <MapPin className="w-3 h-3 flex-shrink-0" />{match.venue}
                     </span>
                 )}

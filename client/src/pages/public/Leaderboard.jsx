@@ -68,14 +68,13 @@ const Leaderboard = () => {
             </div>
 
             {/* Leaderboard */}
-            <div className="max-w-4xl mx-auto p-4 md:p-6">
+            <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    {/* Header Row */}
-                    <div className="grid grid-cols-12 p-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-                        <div className="col-span-2 text-center">Rank</div>
-                        <div className="col-span-1 text-center">Logo</div>
-                        <div className="col-span-6">Department</div>
-                        <div className="col-span-3 text-right pr-4">Points</div>
+                    {/* Header Row — hidden on very small screens, visible sm+ */}
+                    <div className="hidden sm:flex items-center px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                        <div className="w-16 text-center flex-shrink-0">Rank</div>
+                        <div className="flex-1 ml-3">Department</div>
+                        <div className="w-24 text-right pr-1 flex-shrink-0">Points</div>
                     </div>
 
                     {/* Standings */}
@@ -90,30 +89,31 @@ const Leaderboard = () => {
                             return (
                                 <div
                                     key={team._id}
-                                    className={`grid grid-cols-12 p-4 gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 ${
+                                    className={`flex items-center px-3 sm:px-4 py-3 sm:py-4 gap-3 transition-colors ${
                                         isTop3 ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                                     }`}
                                 >
                                     {/* Rank */}
-                                    <div className={`col-span-2 flex items-center justify-center ${
-                                        isTop3 ? 'text-xl' : 'text-base text-slate-500 dark:text-slate-400'
+                                    <div className={`w-10 sm:w-16 flex items-center justify-center flex-shrink-0 ${
+                                        isTop3 ? 'text-xl sm:text-2xl' : 'text-sm font-bold text-slate-400 dark:text-slate-500'
                                     }`}>
                                         {getRankIcon(index)}
                                     </div>
 
                                     {/* Logo */}
-                                    <div className="col-span-1 flex items-center justify-center">
+                                    <div className="flex-shrink-0">
                                         {getLogoUrl(deptLogo) ? (
-                                            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-600">
+                                            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-600 overflow-hidden">
                                                 <img
                                                     src={getLogoUrl(deptLogo)}
                                                     alt={deptName}
-                                                    className="w-8 h-8 object-contain"
+                                                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+                                                    onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = `<span class="text-xs font-bold text-blue-600">${deptCode?.slice(0, 2)}</span>`; }}
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-800">
-                                                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-800">
+                                                <span className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400">
                                                     {deptCode?.slice(0, 2)}
                                                 </span>
                                             </div>
@@ -121,23 +121,23 @@ const Leaderboard = () => {
                                     </div>
 
                                     {/* Department */}
-                                    <div className="col-span-6 flex flex-col justify-center">
-                                        <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                                             {deptName}
                                         </div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                                            {deptCode}
-                                        </div>
+                                        {deptCode && (
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                {deptCode}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Points */}
-                                    <div className="col-span-3 flex items-center justify-end">
-                                        <div className="text-right">
-                                            <div className={`text-xl font-bold ${isTop3 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white'}`}>
-                                                {points}
-                                            </div>
-                                            <div className="text-xs text-slate-400">pts</div>
+                                    <div className="flex-shrink-0 text-right">
+                                        <div className={`text-lg sm:text-xl font-bold tabular-nums ${isTop3 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white'}`}>
+                                            {points}
                                         </div>
+                                        <div className="text-[10px] sm:text-xs text-slate-400">pts</div>
                                     </div>
                                 </div>
                             );
@@ -145,20 +145,11 @@ const Leaderboard = () => {
                     </div>
                 </div>
 
-                {/* Legend */}
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                    <div className="p-3 rounded-lg text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        <div className="text-xl mb-1">🥇</div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">1st Place</div>
-                    </div>
-                    <div className="p-3 rounded-lg text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        <div className="text-xl mb-1">🥈</div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">2nd Place</div>
-                    </div>
-                    <div className="p-3 rounded-lg text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        <div className="text-xl mb-1">🥉</div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">3rd Place</div>
-                    </div>
+                {/* Legend — flat, non-interactive (not buttons) */}
+                <div className="mt-5 flex items-center justify-center gap-4 sm:gap-6 text-xs text-slate-400 dark:text-slate-500">
+                    <span className="flex items-center gap-1"><span className="text-base">🥇</span> 1st</span>
+                    <span className="flex items-center gap-1"><span className="text-base">🥈</span> 2nd</span>
+                    <span className="flex items-center gap-1"><span className="text-base">🥉</span> 3rd</span>
                 </div>
             </div>
 
