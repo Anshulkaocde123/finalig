@@ -214,8 +214,11 @@ docker run -p 5000:5000 --env-file server/.env ig-server
 
 ## 👥 Team
 
-- **Anshul Jain** — Lead Developer
-- **VNIT Sports Committee** — Requirements & Feedback
+- **Anshul Jain**
+- **Chinmay Sabharwal**
+- **Sanvi Yanagandula**
+
+Built for the VNIT Sports Committee
 
 ---
 
