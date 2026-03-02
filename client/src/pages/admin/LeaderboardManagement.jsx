@@ -14,9 +14,11 @@ const LeaderboardManagement = () => {
 
     useEffect(() => {
         fetchLeaderboard();
-        socket.on('pointsAwarded', () => fetchLeaderboard());
-        socket.on('leaderboardReset', () => fetchLeaderboard());
-        return () => { socket.off('pointsAwarded'); socket.off('leaderboardReset'); };
+        const handlePointsAwarded = () => fetchLeaderboard();
+        const handleReset = () => fetchLeaderboard();
+        socket.on('pointsAwarded', handlePointsAwarded);
+        socket.on('leaderboardReset', handleReset);
+        return () => { socket.off('pointsAwarded', handlePointsAwarded); socket.off('leaderboardReset', handleReset); };
     }, []);
 
     const fetchLeaderboard = async () => {

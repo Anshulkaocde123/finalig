@@ -3,7 +3,8 @@ import { io } from 'socket.io-client';
 // In development, connect to backend server directly
 // In production, use same origin (frontend serves from backend)
 const isDev = import.meta.env.DEV;
-const SOCKET_URL = isDev ? 'http://localhost:5001' : window.location.origin;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
+    || (isDev ? 'http://localhost:5000' : window.location.origin);
 
 console.log('🔌 Socket connecting to:', SOCKET_URL);
 
@@ -12,9 +13,9 @@ export const socket = io(SOCKET_URL, {
     reconnection: true,
     reconnectionAttempts: 10,
     reconnectionDelay: 1000,
-    reconnectionDelayMax: 5001,
+    reconnectionDelayMax: 5000,
     timeout: 20000,
-    connectTimeout: 45001,
+    connectTimeout: 45000,
     transports: ['websocket', 'polling'],
     withCredentials: false,
     upgrade: true,
@@ -22,7 +23,7 @@ export const socket = io(SOCKET_URL, {
     multiplex: true,
     // Prevent premature disconnections
     pingTimeout: 60000,
-    pingInterval: 25001
+    pingInterval: 25000
 });
 
 // Connection event handlers

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import PublicNavbar from '../../components/PublicNavbar';
 import { Trophy } from 'lucide-react';
+import socket from '../../socket';
 
 const Leaderboard = () => {
     const [standings, setStandings] = useState([]);
@@ -9,6 +10,17 @@ const Leaderboard = () => {
 
     useEffect(() => {
         fetchStandings();
+
+        // Real-time: refresh leaderboard when admin awards points or resets
+        socket.on('pointsAwarded', fetchStandings);
+        socket.on('leaderboardReset', fetchStandings);
+        socket.on('matchUpdate', fetchStandings);
+
+        return () => {
+            socket.off('pointsAwarded', fetchStandings);
+            socket.off('leaderboardReset', fetchStandings);
+            socket.off('matchUpdate', fetchStandings);
+        };
     }, []);
 
     const fetchStandings = async () => {

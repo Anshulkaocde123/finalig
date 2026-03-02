@@ -26,10 +26,11 @@ const MatchDetail = () => {
 
     useEffect(() => {
         fetchMatch();
-        socket.on('matchUpdate', (data) => {
+        const handleMatchUpdate = (data) => {
             if (data._id === id || data.matchId === id) fetchMatch();
-        });
-        return () => { socket.off('matchUpdate'); };
+        };
+        socket.on('matchUpdate', handleMatchUpdate);
+        return () => { socket.off('matchUpdate', handleMatchUpdate); };
     }, [id]);
 
     const getTeamName = (team) => team?.name || team?.shortCode || 'TBD';

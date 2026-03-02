@@ -44,14 +44,17 @@ const Dashboard = () => {
         };
         fetchData();
 
-        socket.on('matchUpdate', () => fetchData());
-        socket.on('matchCreated', () => fetchData());
-        socket.on('matchDeleted', () => fetchData());
+        const handleUpdate = () => fetchData();
+        const handleCreated = () => fetchData();
+        const handleDeleted = () => fetchData();
+        socket.on('matchUpdate', handleUpdate);
+        socket.on('matchCreated', handleCreated);
+        socket.on('matchDeleted', handleDeleted);
 
         return () => {
-            socket.off('matchUpdate');
-            socket.off('matchCreated');
-            socket.off('matchDeleted');
+            socket.off('matchUpdate', handleUpdate);
+            socket.off('matchCreated', handleCreated);
+            socket.off('matchDeleted', handleDeleted);
         };
     }, []);
 

@@ -21,6 +21,12 @@ const awardPoints = async (req, res) => {
             description
         });
 
+        // Emit real-time event so public leaderboard updates instantly
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('pointsAwarded', { department, points, eventName });
+        }
+
         res.status(201).json(log);
     } catch (error) {
         console.error('Error awarding points:', error);
