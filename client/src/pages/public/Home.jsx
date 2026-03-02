@@ -66,22 +66,79 @@ const Home = () => {
         }
     }, [highlightDate, fetchHighlightsForDate]);
 
+    // ── Sort helper (keeps UI stable) ──
+    const sortMatches = useCallback((list) => {
+        const priority = { SCHEDULED: 0, COMPLETED: 1, CANCELLED: 2 };
+        return [...list].sort((a, b) => {
+            if (priority[a.status] !== priority[b.status]) return priority[a.status] - priority[b.status];
+            return new Date(b.scheduledAt || 0) - new Date(a.scheduledAt || 0);
+        });
+    }, []);
+
     useEffect(() => {
         fetchData();
 
-        // Debounce socket updates — coalesce rapid events into one refetch
-        const debouncedFetch = () => {
-            clearTimeout(debounceRef.current);
-            debounceRef.current = setTimeout(() => fetchData(true), 600);
+        // ── LOCAL state updates from socket payloads (NO refetch) ──
+        const handleMatchCreated = (match) => {
+            if (!match?._id) return;
+            setMatches(prev => {
+                // Prevent duplicate
+                if (prev.some(m => m._id === match._id)) return prev;
+                return sortMatches([match, ...prev]);
+            });
+            setLastUpdated(new Date());
         };
 
-        const events = ['matchCreated', 'matchUpdate', 'matchDeleted', 'highlightCreated', 'highlightUpdated', 'highlightDeleted'];
-        events.forEach(e => socket.on(e, debouncedFetch));
+        const handleMatchUpdate = (match) => {
+            if (!match?._id) return;
+            setMatches(prev => {
+                const idx = prev.findIndex(m => m._id === match._id);
+                if (idx === -1) return sortMatches([match, ...prev]); // New match we hadn't seen
+                const updated = [...prev];
+                updated[idx] = { ...updated[idx], ...match };
+                return sortMatches(updated);
+            });
+            setLastUpdated(new Date());
+        };
+
+        const handleMatchDeleted = (data) => {
+            const matchId = data?.matchId || data?._id;
+            if (!matchId) return;
+            setMatches(prev => prev.filter(m => m._id !== matchId));
+            setLastUpdated(new Date());
+        };
+
+        // Highlight events still refetch (rare events, lightweight)
+        const debouncedHighlightFetch = () => {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => fetchHighlightsForDate(highlightDate), 600);
+        };
+
+        socket.on('matchCreated', handleMatchCreated);
+        socket.on('matchUpdate', handleMatchUpdate);
+        socket.on('matchDeleted', handleMatchDeleted);
+        socket.on('highlightCreated', debouncedHighlightFetch);
+        socket.on('highlightUpdated', debouncedHighlightFetch);
+        socket.on('highlightDeleted', debouncedHighlightFetch);
+
+        // ── Handle reconnection: refetch to catch missed events ──
+        const handleReconnect = () => {
+            console.log('🔄 Socket reconnected — syncing missed events');
+            fetchData(true);
+        };
+        socket.on('reconnect', handleReconnect);
+
         return () => {
             clearTimeout(debounceRef.current);
-            events.forEach(e => socket.off(e, debouncedFetch));
+            socket.off('matchCreated', handleMatchCreated);
+            socket.off('matchUpdate', handleMatchUpdate);
+            socket.off('matchDeleted', handleMatchDeleted);
+            socket.off('highlightCreated', debouncedHighlightFetch);
+            socket.off('highlightUpdated', debouncedHighlightFetch);
+            socket.off('highlightDeleted', debouncedHighlightFetch);
+            socket.off('reconnect', handleReconnect);
         };
-    }, [fetchData]);
+    }, [fetchData, sortMatches, highlightDate, fetchHighlightsForDate]);
 
     // Re-fetch highlights when date changes (without reloading matches)
     useEffect(() => {

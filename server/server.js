@@ -95,8 +95,28 @@ app.get('/api/socket-status', (req, res) => {
 });
 
 // Security middleware
-// Temporarily disabled for debugging - helmet may be causing issues
-// app.use(helmet());
+// Helmet adds critical HTTP security headers (XSS, HSTS, no-sniff, etc.)
+app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false, // Disable CSP in dev
+    crossOriginEmbedderPolicy: false, // Required for loading external images
+}));
+
+// Rate limiting for auth endpoints to prevent brute-force attacks
+const rateLimit = require('express-rate-limit');
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // 20 attempts per window per IP
+    message: { message: 'Too many login attempts. Please try again after 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 120, // 120 requests per minute per IP
+    message: { message: 'Too many requests. Please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Compression middleware - reduces response size by ~70%
 app.use(compression());
@@ -215,9 +235,9 @@ app.get('/api/debug/db-status', async (req, res) => {
 
 // Mount routes
 console.log('📍 Mounting API routes...');
-app.use('/api/auth', require('./routes/authRoutes'));
-console.log('📍 Auth routes mounted');
-app.use('/api/matches', matchRoutes);
+app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
+console.log('📍 Auth routes mounted (rate-limited)');
+app.use('/api/matches', apiLimiter, matchRoutes);
 console.log('📍 Matches routes mounted');
 app.use('/api/departments', departmentRoutes);
 console.log('📍 Departments routes mounted');

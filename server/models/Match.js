@@ -60,12 +60,20 @@ const matchSchema = new mongoose.Schema({
     timestamps: true 
 });
 
-matchSchema.index({ sport: 1, status: 1 });
-matchSchema.index({ scheduledAt: -1 });
+// ======== INDEXES ========
+// Single-field indexes for individual filters
 matchSchema.index({ status: 1 });
 matchSchema.index({ teamA: 1 });
 matchSchema.index({ teamB: 1 });
 matchSchema.index({ winner: 1 });
+
+// Compound indexes for common getAllMatches query patterns
+matchSchema.index({ sport: 1, status: 1, scheduledAt: -1 }); // sport + status filter + date sort
+matchSchema.index({ status: 1, scheduledAt: -1, _id: -1 });   // status filter + cursor pagination
+matchSchema.index({ scheduledAt: -1, _id: -1 });               // default sort order + cursor
+matchSchema.index({ season: 1, sport: 1, scheduledAt: -1 });   // season + sport filter
+matchSchema.index({ tags: 1 });                                 // tag-based searches
+matchSchema.index({ matchCategory: 1, scheduledAt: -1 });      // category filter + sort
 
 const Match = mongoose.model('Match', matchSchema);
 

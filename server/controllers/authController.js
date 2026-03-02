@@ -19,6 +19,17 @@ const login = async (req, res) => {
             });
         }
 
+        // ── NoSQL Injection Guard: reject non-string inputs ──
+        if (username && typeof username !== 'string') {
+            return res.status(400).json({ message: 'Invalid input type for username' });
+        }
+        if (studentId && typeof studentId !== 'string') {
+            return res.status(400).json({ message: 'Invalid input type for studentId' });
+        }
+        if (password && typeof password !== 'string') {
+            return res.status(400).json({ message: 'Invalid input type for password' });
+        }
+
         // Support both username and studentId login
         const loginId = studentId || username;
         
@@ -89,7 +100,18 @@ const googleCallback = async (req, res) => {
     try {
         const { googleId, email, name, picture } = req.body;
 
-        let admin = await Admin.findOne({ googleId });
+        // SECURITY: Validate required fields from Google
+        if (!googleId || !email) {
+            return res.status(400).json({ message: 'Missing required Google profile data' });
+        }
+
+        // SECURITY: Sanitize inputs - prevent prototype pollution
+        const safeGoogleId = String(googleId).substring(0, 100);
+        const safeEmail = String(email).toLowerCase().substring(0, 254);
+        const safeName = String(name || '').substring(0, 100);
+        const safePicture = String(picture || '').substring(0, 500);
+
+        let admin = await Admin.findOne({ googleId: safeGoogleId });
 
         if (!admin) {
             // Check if email is a VNIT student email
@@ -153,26 +175,28 @@ const googleCallback = async (req, res) => {
 
 // @desc    Seed initial super admin
 // @route   POST /api/auth/seed
-// @access  Public (Should be protected or removed in prod)
+// @access  RESTRICTED - only works if no super_admin exists yet
 const seedAdmin = async (req, res) => {
     try {
-        const exists = await Admin.findOne({ 
-            $or: [
-                { username: 'admin' }, 
-                { email: 'admin@vnit.ac.in' },
-                { role: 'super_admin' }
-            ] 
-        });
-        
-        if (exists) {
-            return res.status(400).json({ message: 'Admin already exists' });
+        // SECURITY: Only allow seeding if absolutely no super_admin exists
+        const superAdminCount = await Admin.countDocuments({ role: 'super_admin' });
+        if (superAdminCount > 0) {
+            return res.status(403).json({ message: 'Seed route disabled: admin already exists' });
+        }
+
+        // SECURITY: In production, require a seed secret from environment
+        if (process.env.NODE_ENV === 'production') {
+            const seedSecret = req.headers['x-seed-secret'];
+            if (!seedSecret || seedSecret !== process.env.ADMIN_SEED_SECRET) {
+                return res.status(403).json({ message: 'Invalid seed secret' });
+            }
         }
 
         const admin = await Admin.create({
             username: 'admin',
             studentId: '00000',
             email: 'admin@vnit.ac.in',
-            password: 'admin123',
+            password: process.env.ADMIN_SEED_PASSWORD || 'admin123',
             name: 'VNIT Super Admin',
             provider: 'local',
             verified: true,
@@ -332,7 +356,11 @@ const changePassword = async (req, res) => {
 };
 
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error('FATAL: JWT_SECRET environment variable is not set');
+    }
+    return jwt.sign({ id }, secret, {
         expiresIn: '30d'
     });
 };

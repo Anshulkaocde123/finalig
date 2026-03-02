@@ -18,7 +18,12 @@ const protect = async (req, res, next) => {
             console.log('🔐 Auth Middleware - Token received:', token?.substring(0, 20) + '...');
 
             // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) {
+                console.error('FATAL: JWT_SECRET not set');
+                return res.status(500).json({ message: 'Server configuration error' });
+            }
+            const decoded = jwt.verify(token, jwtSecret);
             console.log('✅ Token verified for admin ID:', decoded.id);
 
             // Get admin from the token
@@ -81,7 +86,9 @@ const optionalAuth = async (req, res, next) => {
     ) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) throw new Error('JWT_SECRET not set');
+            const decoded = jwt.verify(token, jwtSecret);
             req.admin = await Admin.findById(decoded.id)
                 .select('-password')
                 .populate('department', 'name shortCode');

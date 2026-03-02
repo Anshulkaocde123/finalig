@@ -1,415 +1,228 @@
-# VNIT Inter-Department Games - Sports Management System
+# 🏏 VNIT Inter-Department Games
 
-A professional web application for managing inter-department sports tournaments at VNIT (Visvesvaraya National Institute of Technology).
+> Full-stack sports management system for inter-department tournaments at VNIT Nagpur.  
+> Real-time scoring, leaderboard, admin dashboard — production-hardened.
 
-## Features
-
-### Public Features
-- **Live Matches Display** - Real-time match updates with Socket.io
-- **Department Leaderboard** - Live standings and rankings
-- **Match Details** - Complete match information and statistics
-- **About Page** - Event details and information
-- **Student Council** - Council member showcase
-
-### Admin Features
-- **Match Management** - Schedule and manage matches
-- **Live Scoring** - Real-time score updates
-- **Department Management** - Manage department information and logos
-- **Season Management** - Create and manage competition seasons
-- **Leaderboard Control** - Manual point awarding
-- **Reports & Analytics** - View comprehensive statistics
-
-### Authentication
-- **Traditional Login** - Username/password authentication
-- **Google OAuth** - Sign in with Google account (NEW)
-- **Role-Based Access** - Admin, Moderator, Viewer roles
-- **Secure Sessions** - JWT token-based authentication
-
-### Sport-Specific Features
-Supports 9 different sports:
-- Cricket (Overs-based)
-- Badminton (Sets-based)
-- Table Tennis (Sets-based)
-- Volleyball (Points-based)
-- Football (Goals-based)
-- Basketball (Points-based)
-- Kho-Kho (Points-based)
-- Kabaddi (Points-based)
-- Chess (Result-based)
-
-## Tech Stack
-
-### Frontend
-- **React 19.2** - Modern UI library
-- **Vite 5.4** - Lightning-fast build tool
-- **Tailwind CSS** - Utility-first CSS framework
-- **Axios** - HTTP client
-- **Socket.io Client** - Real-time updates
-- **React Router** - Client-side routing
-- **React Hot Toast** - Notification system
-
-### Backend
-- **Node.js 18+** - JavaScript runtime
-- **Express.js 5.2** - Web framework
-- **MongoDB 9.0** - NoSQL database
-- **Mongoose** - ODM for MongoDB
-- **Socket.io** - Real-time bidirectional communication
-- **JWT** - Secure authentication
-- **Bcryptjs** - Password hashing
-- **Cors** - Cross-origin resource sharing
-- **Helmet** - Security headers
-
-### Deployment
-- **Railway.app** - Cloud platform (recommended)
-- **Docker** - Containerization
-- **Nginx** - Reverse proxy
-- **MongoDB Atlas** - Cloud database
-
-## Requirements
-
-- Node.js 18+ ([Download](https://nodejs.org/))
-- npm or yarn
-- MongoDB account ([Create free](https://www.mongodb.com/cloud/atlas))
-- Google OAuth credentials ([Setup](./GOOGLE_OAUTH_SETUP.md))
-
-## Quick Start
-
-### 1. Clone Repository
-```bash
-git clone https://github.com/yourusername/vnit-ig-app.git
-cd vnit-ig-app
-```
-
-### 2. Install Dependencies
-```bash
-npm install
-cd server && npm install
-cd ../client && npm install
-cd ..
-```
-
-### 3. Configure Environment
-```bash
-# Backend
-cp server/.env.example server/.env
-# Edit server/.env with your values
-
-# Frontend
-cp client/.env.example client/.env.local
-# Edit client/.env.local with your values
-```
-
-### 4. Start Development
-```bash
-npm start
-```
-
-The app will open at:
-- **Frontend**: http://localhost:5173
-- **Backend**: http://localhost:5000
-- **Admin Login**: http://localhost:5173/login
-
-### 5. Test Login
-**Username/Password:**
-```
-Username: admin
-Password: admin123
-```
-
-**Or use Google Sign-In:**
-- Click the Google Sign-In button
-- Sign in with your Google account
-
-## Documentation
-
-- **[Setup Guide](./SETUP_GUIDE.md)** - Detailed setup and configuration
-- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Production deployment strategies
-- **[Google OAuth Setup](./GOOGLE_OAUTH_SETUP.md)** - Google authentication configuration
-- **[API Documentation](./API_DOCS.md)** - REST API endpoints
-
-## Project Structure
-
-```
-vnit-ig-app/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   ├── pages/         # Page components
-│   │   ├── api/          # API configuration
-│   │   └── assets/       # Images and static files
-│   ├── package.json
-│   └── vite.config.js
-├── server/                # Express backend
-│   ├── controllers/       # Route handlers
-│   ├── models/           # MongoDB schemas
-│   ├── routes/           # API routes
-│   ├── middleware/       # Custom middleware
-│   ├── server.js         # Entry point
-│   └── package.json
-├── SETUP_GUIDE.md         # Setup instructions
-├── DEPLOYMENT_GUIDE.md    # Deployment strategies
-└── package.json           # Root package configuration
-```
-
-## Key Files
-
-- **Authentication**: `server/controllers/authController.js`
-- **User Model**: `server/models/Admin.js`
-- **Login Page**: `client/src/pages/auth/Login.jsx`
-- **Admin Layout**: `client/src/components/AdminLayout.jsx`
-- **API Config**: `client/src/api/axiosConfig.js`
-
-## API Endpoints
-
-### Authentication
-```
-POST   /api/auth/login              - Login with username/password
-POST   /api/auth/register-oauth     - Google OAuth registration
-POST   /api/auth/seed               - Create initial admin
-```
-
-### Matches
-```
-GET    /api/matches                 - Get all matches
-GET    /api/matches/:id             - Get specific match
-POST   /api/matches/:sport/create   - Create match (admin)
-PUT    /api/matches/:sport/update   - Update match score (admin)
-DELETE /api/matches/:id             - Delete match (admin)
-```
-
-### Departments
-```
-GET    /api/departments             - Get all departments
-PUT    /api/departments/:id         - Update department (admin)
-```
-
-### Leaderboard
-```
-GET    /api/leaderboard             - Get standings
-POST   /api/leaderboard/award       - Award points (admin)
-```
-
-### Seasons
-```
-GET    /api/seasons                 - Get all seasons
-GET    /api/seasons/active          - Get active season
-POST   /api/seasons                 - Create season (admin)
-PUT    /api/seasons/:id             - Update season (admin)
-```
-
-See [API_DOCS.md](./API_DOCS.md) for complete documentation.
-
-## Security Features
-
-**JWT Token-based Authentication**
-- 30-day expiration
-- Secure token storage
-- Automatic refresh on 401
-
-**Password Security**
-- Bcryptjs hashing (10 salt rounds)
-- Never stored in plain text
-- Secure password reset
-
-**Google OAuth 2.0**
-- Secure token verification
-- Automatic user creation
-- Email verification
-
-**CORS Protection**
-- Domain-specific access
-- Credential validation
-
-**Database Security**
-- MongoDB Atlas encryption at rest
-- Secure connection strings
-- IP whitelist support
-
-**Environment Variables**
-- No hardcoded secrets
-- Separate dev/prod configs
-
-## Performance
-
-- **Frontend Build**: Optimized with Vite (~500KB gzipped)
-- **API Response**: <100ms average
-- **Database Queries**: Indexed for fast retrieval
-- **Real-time Updates**: Socket.io for instant sync
-- Caching: HTTP caching headers for static assets
-
-## Deployment Options
-
-### Recommended: Railway.app
-- **Cost**: Free (within $5 credit)
-- **Setup Time**: 5 minutes
-- **Features**: Auto-deploy from GitHub, free SSL, environment variables
-- [View Setup](./DEPLOYMENT_GUIDE.md#-recommended-railwayapp-easiest--free-tier)
-
-### AWS EC2 + RDS
-- **Cost**: $45-50/month
-- **Setup Time**: 30 minutes
-- **Features**: Enterprise-grade, auto-scaling, CDN support
-- [View Setup](./DEPLOYMENT_GUIDE.md#-professional-aws-ec2--rds-enterprise-grade)
-
-### Docker Deployment
-- **Cost**: Variable (hosting dependent)
-- **Setup Time**: 15 minutes
-- **Features**: Container-based, easy migration
-- [View Setup](./DEPLOYMENT_GUIDE.md#-docker-deployment)
-
-## Database Schema
-
-### Admin Model
-```javascript
-{
-  username: String,           // For local auth
-  password: String,          // Hashed with bcryptjs
-  email: String,            // For OAuth
-  googleId: String,         // Google OAuth ID
-  name: String,             // User display name
-  profilePicture: String,   // Avatar URL
-  provider: String,         // 'local' or 'google'
-  role: String,            // 'admin' | 'moderator' | 'viewer'
-  verified: Boolean
-}
-```
-
-### Match Model
-```javascript
-{
-  sport: String,           // Sport type
-  departmentA: String,     // Team A ID
-  departmentB: String,     // Team B ID
-  venue: String,          // Match location
-  scheduledDate: Date,    // Match date/time
-  status: String,         // SCHEDULED | LIVE | COMPLETED
-  // Sport-specific fields (sets, overs, periods, etc.)
-}
-```
-
-### Season Model
-```javascript
-{
-  name: String,           // Season name
-  year: Number,          // Year of season
-  startDate: Date,       // Start date
-  endDate: Date,         // End date
-  description: String,   // Description
-  isActive: Boolean,     // Currently active?
-  archivedAt: Date       // Archive date
-}
-```
-
-## Testing
-
-### Manual Testing Checklist
-- Can register with Google OAuth
-- Can login with username/password
-- Can access admin dashboard (authenticated)
-- Can create a new season
-- Can schedule a match
-- Can award points
-- Real-time updates work (Socket.io)
-- Leaderboard updates correctly
-- Logout clears session
-
-### API Testing
-```bash
-# Test health check
-curl http://localhost:5000/api/health
-
-# Test with authentication
-curl -X GET http://localhost:5000/api/seasons \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-## Troubleshooting
-
-### "Cannot find module" errors
-```bash
-# Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### MongoDB connection errors
-- Verify connection string format
-- Check IP whitelist in MongoDB Atlas
-- Ensure credentials are correct
-
-### Google OAuth not working
-- Verify Client ID and Secret
-- Check redirect URLs in Google Cloud Console
-- Clear browser cache and localStorage
-
-### Port already in use
-```bash
-# Kill process using port
-# Linux/Mac:
-lsof -ti:5000 | xargs kill -9
-lsof -ti:5173 | xargs kill -9
-
-# Windows:
-netstat -ano | findstr :5000
-taskkill /PID <PID> /F
-```
-
-See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for more troubleshooting.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Authors
-
-- **Your Name** - Initial project setup
-- **VNIT Sports Committee** - Requirements and feedback
-
-## Acknowledgments
-
-- VNIT administration for the opportunity
-- All departments participating in the games
-- Student volunteers and coordinators
-
-## Support
-
-For questions or issues:
-1. Check [SETUP_GUIDE.md](./SETUP_GUIDE.md)
-2. Review [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-3. Check existing GitHub issues
-4. Create a new issue with details
-
-## Roadmap
-
-- Email notifications for match updates
-- SMS notifications for important events
-- Mobile app (React Native)
-- Advanced analytics and visualizations
-- Live streaming integration
-- Payment integration for registration
-- Multi-language support
-- AI-powered match predictions
-
-## Statistics
-
-- **Lines of Code**: ~15,000+
-- **API Endpoints**: 30+
-- **Supported Sports**: 9
-- **Database Collections**: 5
-- **Frontend Components**: 20+
-- **Development Time**: ~2 weeks
-- **Performance Score**: 95+/100
+![Node.js](https://img.shields.io/badge/Node.js-18%2B-green) ![React](https://img.shields.io/badge/React-19-blue) ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-brightgreen) ![Express](https://img.shields.io/badge/Express-5.2-lightgrey) ![Socket.io](https://img.shields.io/badge/Socket.io-4.8-black)
 
 ---
 
-**Made for VNIT Inter-Department Games**
+## ⚡ Quick Start (For Teammates)
 
-**Status**: Production Ready | **Last Updated**: 2025-12-20 | **Version**: 1.0.0
+```bash
+# 1. Clone
+git clone https://github.com/Anshulkaocde123/finalig.git
+cd finalig
+
+# 2. One-command setup (installs deps + creates .env + seeds admin)
+chmod +x setup-team.sh && ./setup-team.sh
+
+# 3. Run
+npm start
+```
+
+| Service   | URL                           |
+|-----------|-------------------------------|
+| Frontend  | http://localhost:5173          |
+| Backend   | http://localhost:5000          |
+| Admin     | http://localhost:5173/login    |
+
+**Default Admin Login** → `admin` / `admin123`
+
+> **MongoDB IP Whitelist**: If you get a connection error, ask Anshul to add your IP in [MongoDB Atlas → Network Access](https://cloud.mongodb.com).
+
+---
+
+## 🏗️ Manual Setup (Alternative)
+
+```bash
+# Install all dependencies
+npm install && cd server && npm install && cd ../client && npm install && cd ..
+
+# Create env files from examples
+cp server/.env.example server/.env
+cp client/.env.example client/.env.local
+# Then edit them with real values (ask Anshul for DB credentials)
+
+# Start dev servers
+npm start
+```
+
+---
+
+## 🎯 Features
+
+### Public
+- 📺 **Live Match Tracking** — real-time scores via Socket.io
+- 🏆 **Department Leaderboard** — auto-aggregated standings
+- 📅 **Match Schedule** — upcoming & past matches
+- ℹ️ **About / Student Council** pages
+
+### Admin Dashboard
+- ⚽ **Match Management** — create, update scores, delete
+- 🏅 **Leaderboard Control** — award / undo points, reset
+- 🏢 **Department Management** — logos, details
+- 📆 **Season Management** — create, archive
+- 👥 **Admin Management** — CRUD with role-based access (super_admin, admin, moderator, viewer)
+- 🔒 **Audit Log** — point history tracking
+
+### Supported Sports (10)
+Cricket · Badminton · Table Tennis · Volleyball · Football · Hockey · Basketball · Kho-Kho · Kabaddi · Chess
+
+---
+
+## 🛡️ Security & Production Hardening
+
+| Feature | Detail |
+|---------|--------|
+| **Helmet** | Security headers (HSTS, nosniff, frame-options, etc.) |
+| **Rate Limiting** | Auth: 20 req/15min · API: 120 req/min |
+| **NoSQL Injection Guard** | Type-checking on all auth inputs |
+| **JWT Auth** | 30-day tokens, no hardcoded fallbacks |
+| **Password Hashing** | bcryptjs with 10 salt rounds |
+| **Input Validation** | Whitelist fields, regex sanitization, limit clamping |
+| **Optimistic Concurrency** | `_expectedVersion` on match updates |
+| **Cursor Pagination** | Efficient page tokens for match listing |
+| **Compound Indexes** | Optimized DB queries |
+| **Error Boundaries** | React ErrorBoundary + Express error handler |
+
+---
+
+## 📁 Project Structure
+
+```
+finalig/
+├── client/                  # React 19 + Vite + Tailwind CSS
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/           # Route pages (public + admin)
+│   │   ├── api/             # Axios config
+│   │   ├── context/         # React context providers
+│   │   └── utils/           # Helper functions
+│   ├── .env.example         # ← Copy to .env.local
+│   └── package.json
+│
+├── server/                  # Express 5.2 + Mongoose + Socket.io
+│   ├── controllers/         # Route handlers
+│   │   └── sports/          # Sport-specific controllers
+│   ├── models/              # MongoDB schemas
+│   ├── routes/              # API route definitions
+│   ├── middleware/           # Auth, upload, error handlers
+│   ├── tests/               # Jest unit + smoke tests
+│   ├── scripts/             # Utility scripts (seed, check)
+│   ├── .env.example         # ← Copy to .env
+│   └── server.js            # Main entry point
+│
+├── .github/workflows/       # CI/CD pipeline
+├── docker-compose.yml       # Docker orchestration
+├── setup-team.sh            # One-command team onboarding
+└── package.json             # Root (concurrently runs both)
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Auth
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/seed` | — | Create initial super-admin |
+| POST | `/api/auth/login` | — | Login (username/email/studentId) |
+| GET | `/api/auth/me` | ✅ | Get current user profile |
+
+### Matches
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/matches` | — | List matches (paginated, filterable) |
+| GET | `/api/matches/:id` | — | Get single match |
+| POST | `/api/matches` | ✅ | Create match |
+| PUT | `/api/matches/:id` | ✅ | Update match / scores |
+| DELETE | `/api/matches/:id` | ✅ | Delete match |
+
+### Leaderboard
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/leaderboard` | — | Current standings |
+| GET | `/api/leaderboard/detailed` | — | Detailed with history |
+| POST | `/api/leaderboard/award` | ✅ | Award points |
+| POST | `/api/leaderboard/undo-last` | ✅ | Undo last award |
+| DELETE | `/api/leaderboard/department/:id` | ✅ | Clear dept points |
+| POST | `/api/leaderboard/reset` | 🔒 | Reset all (super_admin) |
+
+### Departments · Seasons · Admins · About · Council · Players · Highlights · Presets
+> All follow REST conventions. See route files under `server/routes/`.
+
+---
+
+## 🧪 Testing
+
+```bash
+# Unit tests (Jest + mongodb-memory-server)
+cd server && npm test
+
+# Live smoke test (requires running server)
+cd server && node tests/smoke-test.js
+
+# Results: 69/69 checks — auth, CRUD, delete, leaderboard,
+#          Helmet, rate-limits, NoSQL injection, pagination
+```
+
+---
+
+## 🐳 Docker
+
+```bash
+# Build & run everything
+docker-compose up --build
+
+# Just the backend
+docker build -t ig-server ./server
+docker run -p 5000:5000 --env-file server/.env ig-server
+```
+
+---
+
+## 🚀 Deployment (Railway)
+
+1. Push to GitHub
+2. Connect repo in [Railway](https://railway.app)
+3. Set environment variables (see `server/.env.example`)
+4. Deploy — Railway auto-detects `npm start`
+
+---
+
+## 🔐 Environment Variables
+
+### Server (`server/.env`)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MONGODB_URI` | ✅ | MongoDB Atlas connection string |
+| `JWT_SECRET` | ✅ | Random 64+ char secret for JWT signing |
+| `PORT` | — | Server port (default: 5000) |
+| `NODE_ENV` | — | `development` or `production` |
+| `GOOGLE_CLIENT_ID` | — | For Google OAuth |
+| `CORS_ORIGIN` | — | Allowed frontend origins |
+
+### Client (`client/.env.local`)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_URL` | ✅ | Backend API URL |
+| `VITE_SOCKET_URL` | ✅ | Backend Socket.io URL |
+| `VITE_GOOGLE_CLIENT_ID` | — | Google OAuth client ID |
+
+---
+
+## 👥 Team
+
+- **Anshul Jain** — Lead Developer
+- **VNIT Sports Committee** — Requirements & Feedback
+
+---
+
+## 📜 License
+
+MIT — see [LICENSE](LICENSE) for details.
+
+---
+
+**Made for VNIT Inter-Department Games** · Status: Production Ready · Version: 2.0.0

@@ -1,0 +1,79 @@
+# ─── VNIT IG App — Docker Compose ───
+# Spins up: Frontend (Nginx) + Backend (Node) + MongoDB + Redis
+
+version: "3.9"
+
+services:
+  # ── MongoDB ──
+  mongo:
+    image: mongo:7
+    container_name: vnit-ig-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: vnit_ig
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Redis (Socket.io adapter for horizontal scaling) ──
+  redis:
+    image: redis:7-alpine
+    container_name: vnit-ig-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (Express API + Socket.io) ──
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: vnit-ig-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://mongo:27017/vnit_ig
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      CORS_ORIGIN: http://localhost,http://localhost:80
+    volumes:
+      - uploads:/app/uploads
+
+  # ── Frontend (Vite build served via Nginx) ──
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: vnit-ig-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
+  redis_data:
+  uploads:

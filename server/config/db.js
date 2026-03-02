@@ -44,21 +44,23 @@ const seedAdminAccount = async () => {
     }
 };
 
-const connectDB = async () => {
+const connectDB = async (retryCount = 0) => {
+    const MAX_RETRIES = 3;
     try {
         if (!process.env.MONGODB_URI) {
             console.warn('⚠️  MONGODB_URI not set - skipping database connection');
             return null;
         }
-        console.log('🔄 Attempting MongoDB connection...');
+        console.log(`🔄 Attempting MongoDB connection${retryCount > 0 ? ` (retry ${retryCount}/${MAX_RETRIES})` : ''}...`);
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 30000,
             socketTimeoutMS: 45000,
-            connectTimeoutMS: 5000,
+            connectTimeoutMS: 30000,
             retryWrites: true,
             w: 'majority',
             maxPoolSize: 10,
-            minPoolSize: 2
+            minPoolSize: 2,
+            family: 4
         });
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
 
@@ -68,9 +70,25 @@ const connectDB = async () => {
         return conn;
     } catch (error) {
         console.error(`❌ MongoDB Connection Error: ${error.message}`);
-        if (error.message.includes('querySrv') || error.message.includes('connect') || error.message.includes('ENOTFOUND')) {
+        
+        // Retry on timeout errors
+        if (retryCount < MAX_RETRIES && (
+            error.message.includes('timed out') || 
+            error.message.includes('ECONNREFUSED') ||
+            error.message.includes('buffering timed out')
+        )) {
+            console.log(`🔄 Retrying in 3 seconds... (${retryCount + 1}/${MAX_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            return connectDB(retryCount + 1);
+        }
+        
+        if (error.message.includes('querySrv') || error.message.includes('connect') || error.message.includes('ENOTFOUND') || error.message.includes('whitelist') || error.message.includes('timed out')) {
             console.error('❌ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-            console.error('❌ Your IP may NOT be whitelisted in MongoDB Atlas!');
+            console.error('❌ Could not connect to MongoDB Atlas!');
+            console.error('❌ Possible causes:');
+            console.error('❌   1. Your IP is not whitelisted in MongoDB Atlas');
+            console.error('❌   2. Slow internet / DNS not resolving');
+            console.error('❌   3. MongoDB Atlas cluster is paused');
             console.error('❌ Fix: Go to https://cloud.mongodb.com');
             console.error('❌       → Network Access → Add IP → Allow All (0.0.0.0/0)');
             console.error('❌ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
