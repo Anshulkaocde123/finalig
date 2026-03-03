@@ -62,7 +62,8 @@ const createAdmin = asyncHandler(async (req, res) => {
     const { 
         studentId, 
         email, 
-        name, 
+        name,
+        username, 
         password, 
         role, 
         department, 
@@ -70,38 +71,41 @@ const createAdmin = asyncHandler(async (req, res) => {
         phone 
     } = req.body;
     
-    // Validate VNIT email format
-    if (email && !email.match(/^[a-z]{2}\d{2}[a-z]{3}\d{3}@students\.vnit\.ac\.in$/)) {
+    // Don't enforce VNIT email for manually created admins
+    // Just check basic email format if provided
+    if (email && !email.includes('@')) {
         res.status(400);
-        throw new Error('Email must be a valid VNIT student email (e.g., bt24cse008@students.vnit.ac.in)');
+        throw new Error('Please provide a valid email address');
     }
     
     // Check if already exists
-    const existingAdmin = await Admin.findOne({
-        $or: [
-            { studentId },
-            { email },
-            { username: studentId }
-        ]
-    });
+    const orConditions = [];
+    if (email) orConditions.push({ email });
+    if (studentId) orConditions.push({ studentId });
+    if (username) orConditions.push({ username });
     
-    if (existingAdmin) {
-        res.status(400);
-        throw new Error('Admin with this Student ID or Email already exists');
+    if (orConditions.length > 0) {
+        const existingAdmin = await Admin.findOne({ $or: orConditions });
+        if (existingAdmin) {
+            res.status(400);
+            throw new Error('Admin with this Username or Email already exists');
+        }
     }
     
-    // Create admin with student ID as username
+    // Create admin
     const admin = await Admin.create({
-        studentId,
-        username: studentId,
+        studentId: studentId || username,
+        username: username || studentId || email,
         email,
-        name,
-        password: password || studentId,  // Default password is student ID
+        name: name || username,
+        password: password || 'changeme123',
         role: role || 'viewer',
         department,
         allowedSports: allowedSports || [],
         phone,
         provider: 'local',
+        isActive: true,
+        isTrusted: true,
         createdBy: req.admin?._id
     });
     
@@ -129,7 +133,7 @@ const updateAdmin = asyncHandler(async (req, res) => {
         allowedSports,
         isActive,
         isTrusted 
-    } = req.body;
+    } = req.body || {};
     
     const admin = await Admin.findById(req.params.id);
     
@@ -138,39 +142,46 @@ const updateAdmin = asyncHandler(async (req, res) => {
         throw new Error('Admin not found');
     }
     
-    // Check permissions
     const currentAdmin = req.admin;
-    if (currentAdmin.role !== 'super_admin' && currentAdmin._id.toString() !== admin._id.toString()) {
-        if (!currentAdmin.canManageAdmin(admin)) {
-            res.status(403);
-            throw new Error('Not authorized to modify this admin');
-        }
+    
+    // Only super_admin can modify other admins
+    // Admins can modify themselves (limited fields)
+    const isSelf = currentAdmin._id.toString() === admin._id.toString();
+    const isSuperAdmin = currentAdmin.role === 'super_admin';
+    
+    if (!isSuperAdmin && !isSelf) {
+        res.status(403);
+        throw new Error('Not authorized to modify this admin');
     }
     
-    // Update fields
+    // Update basic fields (self or super_admin)
     if (name) admin.name = name;
     if (phone !== undefined) admin.phone = phone;
-    if (department) admin.department = department;
-    if (allowedSports) admin.allowedSports = allowedSports;
     
     // Only super_admin can change these
-    if (currentAdmin.role === 'super_admin') {
+    if (isSuperAdmin) {
+        if (department) admin.department = department;
+        if (allowedSports) admin.allowedSports = allowedSports;
+        
         if (role) {
-            console.log(`🔄 Super Admin ${currentAdmin.username} changing role:`, {
-                admin: admin.name || admin.username,
-                from: admin.role,
-                to: role,
-                provider: admin.provider
-            });
+            console.log(`🔄 Role change: ${admin.name || admin.username} ${admin.role} → ${role}`);
             admin.role = role;
         }
-        if (isActive !== undefined) admin.isActive = isActive;
+        if (isActive !== undefined) {
+            admin.isActive = isActive;
+            if (isActive === true) {
+                admin.isSuspended = false;
+                admin.suspendedAt = null;
+                admin.suspendedBy = null;
+                admin.suspensionReason = null;
+                console.log(`✅ Admin ${admin.name || admin.username} reactivated`);
+            }
+        }
         if (isTrusted !== undefined) {
             admin.isTrusted = isTrusted;
             if (isTrusted) {
                 admin.trustedSince = new Date();
                 admin.trustedBy = currentAdmin._id;
-                console.log(`✅ Admin ${admin.name || admin.username} granted trust by ${currentAdmin.username}`);
             }
         }
     }
@@ -181,12 +192,7 @@ const updateAdmin = asyncHandler(async (req, res) => {
         .populate('department', 'name shortCode')
         .select('-password');
     
-    console.log(`👤 Admin updated:`, {
-        name: updatedAdmin.name,
-        role: updatedAdmin.role,
-        isTrusted: updatedAdmin.isTrusted,
-        provider: updatedAdmin.provider
-    });
+    console.log(`👤 Admin updated: ${updatedAdmin.name} | role=${updatedAdmin.role} active=${updatedAdmin.isActive} trusted=${updatedAdmin.isTrusted}`);
     
     res.json({
         success: true,
@@ -376,7 +382,7 @@ const getLiveActivity = asyncHandler(async (req, res) => {
  * @access  Private (Super Admin)
  */
 const suspendAdmin = asyncHandler(async (req, res) => {
-    const { reason } = req.body;
+    const { reason } = req.body || {};
     
     const admin = await Admin.findById(req.params.id);
     
@@ -391,6 +397,8 @@ const suspendAdmin = asyncHandler(async (req, res) => {
     }
     
     admin.isActive = false;
+    admin.isSuspended = true;
+    admin.isTrusted = false;
     admin.suspendedAt = new Date();
     admin.suspendedBy = req.admin._id;
     admin.suspensionReason = reason || 'No reason provided';
@@ -402,7 +410,7 @@ const suspendAdmin = asyncHandler(async (req, res) => {
     
     res.json({
         success: true,
-        message: `Admin ${admin.name} has been suspended`
+        message: `Admin ${admin.name || admin.username} has been suspended`
     });
 });
 

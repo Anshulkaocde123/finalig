@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../api/axiosConfig';
+import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
-import { Shield, Plus, Trash2, UserCheck, UserX, Activity, X, Save } from 'lucide-react';
+import { Shield, Plus, Trash2, UserCheck, UserX, Activity, X, Save, RotateCcw } from 'lucide-react';
 
 const AdminManagement = () => {
     const [admins, setAdmins] = useState([]);
@@ -23,7 +23,10 @@ const AdminManagement = () => {
             setLoading(true);
             const response = await api.get('/admins');
             setAdmins(response.data.data || []);
-        } catch (err) { if (err.response?.status !== 403) toast.error('Failed to load admins'); }
+        } catch (err) { 
+            console.error('❌ Fetch admins error:', err.response?.data || err);
+            if (err.response?.status !== 403) toast.error('Failed to load admins'); 
+        }
         finally { setLoading(false); }
     };
 
@@ -49,7 +52,10 @@ const AdminManagement = () => {
             setShowCreateModal(false);
             setFormData({ studentId: '', username: '', email: '', password: '', role: 'score_manager', isTrusted: false });
             fetchAdmins();
-        } catch (err) { toast.error(err.response?.data?.message || 'Failed to create admin'); }
+        } catch (err) { 
+            console.error('❌ Create admin error:', err.response?.data || err);
+            toast.error(err.response?.data?.message || 'Failed to create admin'); 
+        }
     };
 
     const handleVerifyAdmin = async (adminId) => {
@@ -68,21 +74,64 @@ const AdminManagement = () => {
         }
     };
 
-    const handleSuspendAdmin = async (adminId) => {
-        if (!window.confirm('Are you sure you want to suspend this admin?')) return;
+    const handleUpdateRole = async (adminId, newRole) => {
+        const admin = admins.find(a => a._id === adminId);
+        const displayName = admin?.name || admin?.username || 'Admin';
+        const oldRole = admin?.role;
+        
+        // Optimistic update
+        setAdmins(prev => prev.map(a => a._id === adminId ? { ...a, role: newRole } : a));
+        
         try {
-            await api.put(`/admins/${adminId}/suspend`);
-            toast.success('Admin suspended');
-            fetchAdmins();
-        } catch (err) { toast.error('Failed to suspend admin'); }
+            const res = await api.put(`/admins/${adminId}`, { role: newRole });
+            console.log('✅ Role updated:', res.data);
+            toast.success(`${displayName}: ${oldRole} → ${newRole}`);
+        } catch (err) { 
+            console.error('❌ Role update error:', err.response?.data || err);
+            toast.error(err.response?.data?.message || 'Failed to update role');
+            // Revert on failure
+            setAdmins(prev => prev.map(a => a._id === adminId ? { ...a, role: oldRole } : a));
+        }
     };
 
-    const handleUpdateRole = async (adminId, newRole) => {
+    const handleSuspendAdmin = async (adminId) => {
+        const admin = admins.find(a => a._id === adminId);
+        const displayName = admin?.name || admin?.username || 'Admin';
+        if (!window.confirm(`Suspend ${displayName}? They will lose access immediately.`)) return;
         try {
-            await api.put(`/admins/${adminId}`, { role: newRole });
-            toast.success('Role updated');
+            await api.put(`/admins/${adminId}/suspend`);
+            toast.success(`${displayName} suspended`);
+            setAdmins(prev => prev.map(a => a._id === adminId ? { ...a, isActive: false, isSuspended: true } : a));
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to suspend admin'); }
+    };
+
+    const handleReactivateAdmin = async (adminId) => {
+        const admin = admins.find(a => a._id === adminId);
+        const displayName = admin?.name || admin?.username || 'Admin';
+        if (!window.confirm(`Reactivate ${displayName}? They will regain access.`)) return;
+        try {
+            await api.put(`/admins/${adminId}`, { isActive: true });
+            await api.put(`/admins/${adminId}/verify`, { isTrusted: true, verified: true });
+            toast.success(`${displayName} reactivated and verified!`);
             fetchAdmins();
-        } catch (err) { toast.error('Failed to update role'); }
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to reactivate admin'); }
+    };
+
+    const handleDeleteAdmin = async (adminId) => {
+        const admin = admins.find(a => a._id === adminId);
+        const displayName = admin?.name || admin?.username || 'Admin';
+        if (!window.confirm(`Permanently delete ${displayName}? This cannot be undone.`)) return;
+        try {
+            await api.delete(`/admins/${adminId}`);
+            toast.success(`${displayName} deleted successfully`);
+            setAdmins(prev => prev.filter(a => a._id !== adminId));
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to delete admin'); }
+    };
+
+    const getAdminStatus = (admin) => {
+        if (!admin.isActive || admin.isSuspended) return 'suspended';
+        if (admin.isTrusted) return 'verified';
+        return 'pending';
     };
 
     return (
@@ -144,65 +193,86 @@ const AdminManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {admins.map((admin) => (
-                                        <tr key={admin._id} className="hover:bg-slate-50 dark:hover:bg-slate-900">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    {admin.profilePicture ? (
-                                                        <img src={admin.profilePicture} alt={admin.username} 
-                                                            className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                                                            {admin.username?.charAt(0).toUpperCase() || admin.name?.charAt(0).toUpperCase() || '?'}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <div className="text-slate-800 dark:text-white font-medium flex items-center gap-2">
-                                                            {admin.name || admin.username}
-                                                            {admin.provider === 'google' && (
-                                                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded text-xs font-medium">Google</span>
+                                    {admins.map((admin) => {
+                                        const status = getAdminStatus(admin);
+                                        return (
+                                            <tr key={admin._id} className={`hover:bg-slate-50 dark:hover:bg-slate-900 ${status === 'suspended' ? 'opacity-60' : ''}`}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        {admin.profilePicture ? (
+                                                            <img src={admin.profilePicture} alt={admin.username} 
+                                                                className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700" />
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                                                                {admin.username?.charAt(0).toUpperCase() || admin.name?.charAt(0).toUpperCase() || '?'}
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div className="text-slate-800 dark:text-white font-medium flex items-center gap-2">
+                                                                {admin.name || admin.username}
+                                                                {admin.provider === 'google' && (
+                                                                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded text-xs font-medium">Google</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-slate-400 text-xs">{admin.email}</div>
+                                                            {admin.username && admin.name && admin.username !== admin.name && (
+                                                                <div className="text-slate-500 text-xs">@{admin.username}</div>
                                                             )}
                                                         </div>
-                                                        <div className="text-slate-400 text-xs">{admin.email}</div>
-                                                        {admin.username && admin.name && admin.username !== admin.name && (
-                                                            <div className="text-slate-500 text-xs">@{admin.username}</div>
-                                                        )}
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <select value={admin.role} onChange={(e) => handleUpdateRole(admin._id, e.target.value)}
-                                                    className="px-3 py-1 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                    {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                                                </select>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {admin.isTrusted ? (
-                                                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-full text-sm font-medium">✓ Verified</span>
-                                                ) : admin.isSuspended ? (
-                                                    <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-full text-sm font-medium">Suspended</span>
-                                                ) : (
-                                                    <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-full text-sm font-medium">Pending</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex gap-2">
-                                                    {!admin.isTrusted && !admin.isSuspended && (
-                                                        <button onClick={() => handleVerifyAdmin(admin._id)}
-                                                            className="p-2 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 rounded-lg transition-colors" title="Verify">
-                                                            <UserCheck className="w-4 h-4" />
-                                                        </button>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <select value={admin.role} onChange={(e) => handleUpdateRole(admin._id, e.target.value)}
+                                                        disabled={status === 'suspended'}
+                                                        className="px-3 py-1 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                                    </select>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {status === 'verified' ? (
+                                                        <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-full text-sm font-medium">✓ Verified</span>
+                                                    ) : status === 'suspended' ? (
+                                                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-full text-sm font-medium">⛔ Suspended</span>
+                                                    ) : (
+                                                        <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-full text-sm font-medium">⏳ Pending</span>
                                                     )}
-                                                    {!admin.isSuspended && (
-                                                        <button onClick={() => handleSuspendAdmin(admin._id)}
-                                                            className="p-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg transition-colors" title="Suspend">
-                                                            <UserX className="w-4 h-4" />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex gap-2">
+                                                        {/* Verify — show for pending (not verified, not suspended) */}
+                                                        {status === 'pending' && (
+                                                            <button onClick={() => handleVerifyAdmin(admin._id)}
+                                                                className="p-2 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 rounded-lg transition-colors" title="Verify & Trust">
+                                                                <UserCheck className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+
+                                                        {/* Reactivate — show for suspended */}
+                                                        {status === 'suspended' && (
+                                                            <button onClick={() => handleReactivateAdmin(admin._id)}
+                                                                className="p-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg transition-colors" title="Reactivate & Authorize">
+                                                                <RotateCcw className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+
+                                                        {/* Suspend — show for active (verified or pending, not already suspended) */}
+                                                        {status !== 'suspended' && (
+                                                            <button onClick={() => handleSuspendAdmin(admin._id)}
+                                                                className="p-2 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-lg transition-colors" title="Suspend">
+                                                                <UserX className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+
+                                                        {/* Delete — always show */}
+                                                        <button onClick={() => handleDeleteAdmin(admin._id)}
+                                                            className="p-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg transition-colors" title="Delete permanently">
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
