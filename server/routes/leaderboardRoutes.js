@@ -8,7 +8,8 @@ const {
     resetLeaderboard, 
     undoLastAward, 
     clearDepartmentPoints,
-    getDepartmentHistory
+    getDepartmentHistory,
+    setDepartmentPoints
 } = require('../controllers/leaderboardController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -21,6 +22,7 @@ router.get('/department/:deptId/history', getDepartmentHistory);
 router.post('/award', protect, awardPoints);
 router.post('/award-from-match', protect, awardPointsFromMatch);
 router.post('/undo-last', protect, undoLastAward);
+router.put('/department/:deptId', protect, authorize('super_admin', 'admin'), setDepartmentPoints);
 router.delete('/department/:deptId', protect, authorize('super_admin', 'admin'), clearDepartmentPoints);
 
 // Super admin only

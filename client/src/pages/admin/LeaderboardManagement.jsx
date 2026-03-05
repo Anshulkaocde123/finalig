@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import socket from '../../socket';
 import { toast } from 'react-hot-toast';
-import { RotateCcw, Trash2, RefreshCw, Trophy, TrendingUp, ChevronDown } from 'lucide-react';
-import ConfirmModal from '../../components/ConfirmModal';
+import { RefreshCw, Trophy, TrendingUp, ChevronDown, Pencil, Check, X } from 'lucide-react';
 
 const LeaderboardManagement = () => {
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [actionLoading, setActionLoading] = useState(null);
-    const [showConfirm, setShowConfirm] = useState({ isOpen: false, action: null });
     const [expandedRow, setExpandedRow] = useState(null);
+    const [editingDept, setEditingDept] = useState(null);
+    const [editPoints, setEditPoints] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         fetchLeaderboard();
@@ -31,35 +31,30 @@ const LeaderboardManagement = () => {
         finally { setLoading(false); }
     };
 
-    const handleResetLeaderboard = async () => {
-        setActionLoading('reset');
-        try {
-            await api.post('/leaderboard/reset');
-            setLeaderboard([]);
-            setShowConfirm({ isOpen: false, action: null });
-            toast.success('Leaderboard reset successfully!');
-        } catch (err) { toast.error('Failed to reset leaderboard'); }
-        finally { setActionLoading(null); }
+    const startEditing = (dept) => {
+        setEditingDept(dept._id);
+        setEditPoints(String(dept.points));
     };
 
-    const handleUndoLastAward = async () => {
-        setActionLoading('undo');
-        try {
-            await api.post('/leaderboard/undo-last');
-            await fetchLeaderboard();
-            toast.success('Last point award undone!');
-        } catch (err) { toast.error(err.response?.data?.message || 'Failed to undo last award'); }
-        finally { setActionLoading(null); }
+    const cancelEditing = () => {
+        setEditingDept(null);
+        setEditPoints('');
     };
 
-    const handleDeleteDepartmentPoints = async (deptId) => {
-        setActionLoading(`delete-${deptId}`);
+    const handleSavePoints = async (deptId) => {
+        const newPoints = parseInt(editPoints, 10);
+        if (isNaN(newPoints) || newPoints < 0) {
+            toast.error('Please enter a valid non-negative number');
+            return;
+        }
+        setSaving(true);
         try {
-            await api.delete(`/leaderboard/department/${deptId}`);
+            await api.put(`/leaderboard/department/${deptId}`, { points: newPoints });
             await fetchLeaderboard();
-            toast.success('Department points cleared!');
-        } catch (err) { toast.error('Failed to clear points'); }
-        finally { setActionLoading(null); }
+            toast.success('Points updated successfully!');
+            cancelEditing();
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to update points'); }
+        finally { setSaving(false); }
     };
 
     const getRankBadge = (rank) => ['🥇', '🥈', '🥉'][rank - 1] || `#${rank}`;
@@ -82,35 +77,18 @@ const LeaderboardManagement = () => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-3 sm:p-6 md:p-8">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
-                    <Trophy className="w-8 h-8 text-blue-500" />
-                    Leaderboard Management
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">View rankings, manage points, and control the leaderboard</p>
-            </div>
-
-            {/* Admin Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <button onClick={() => setShowConfirm({ isOpen: true, action: 'reset' })} disabled={actionLoading}
-                    className="p-5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900 rounded-xl hover:border-red-400 dark:hover:border-red-700 transition-all group disabled:opacity-50">
-                    <Trash2 className="w-7 h-7 text-red-500 mb-2" />
-                    <div className="text-sm font-semibold text-red-600 dark:text-red-400">Reset All</div>
-                    <div className="text-sm text-red-400 dark:text-red-300/60 mt-1">Clear entire leaderboard</div>
-                </button>
-
-                <button onClick={handleUndoLastAward} disabled={actionLoading === 'undo'}
-                    className="p-5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 rounded-xl hover:border-amber-400 dark:hover:border-amber-700 transition-all group disabled:opacity-50">
-                    <RotateCcw className={`w-7 h-7 text-amber-500 mb-2 ${actionLoading === 'undo' ? 'animate-spin' : ''}`} />
-                    <div className="text-sm font-semibold text-amber-600 dark:text-amber-400">Undo Last</div>
-                    <div className="text-sm text-amber-400 dark:text-amber-300/60 mt-1">Revert last award</div>
-                </button>
-
-                <button onClick={fetchLeaderboard} disabled={actionLoading}
-                    className="p-5 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900 rounded-xl hover:border-blue-400 dark:hover:border-blue-700 transition-all group disabled:opacity-50">
-                    <RefreshCw className={`w-7 h-7 text-blue-500 mb-2 ${loading ? 'animate-spin' : ''}`} />
-                    <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">Refresh</div>
-                    <div className="text-sm text-blue-400 dark:text-blue-300/60 mt-1">Reload data</div>
+            <div className="mb-8 flex items-start justify-between">
+                <div>
+                    <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                        <Trophy className="w-8 h-8 text-blue-500" />
+                        Leaderboard Management
+                    </h1>
+                    <p className="text-slate-600 dark:text-slate-400 mt-1">View rankings and edit department points</p>
+                </div>
+                <button onClick={fetchLeaderboard} disabled={loading}
+                    className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+                    title="Refresh">
+                    <RefreshCw className={`w-5 h-5 text-slate-500 dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
@@ -121,7 +99,7 @@ const LeaderboardManagement = () => {
                         <TrendingUp className="w-6 h-6 text-blue-500" />
                         Current Rankings
                     </h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Total Departments: {leaderboard.length} • Click a row to see points history</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Total Departments: {leaderboard.length} • Click a row to see points history • Click edit to modify points</p>
                 </div>
 
                 {leaderboard.length === 0 ? (
@@ -135,12 +113,13 @@ const LeaderboardManagement = () => {
                         {leaderboard.map((dept, idx) => {
                             const history = dept.history || [];
                             const isExpanded = expandedRow === dept._id;
+                            const isEditing = editingDept === dept._id;
 
                             return (
                                 <React.Fragment key={dept._id}>
                                     <div
-                                        onClick={() => history.length > 0 && toggleRow(dept._id)}
-                                        className={`p-3 sm:p-4 md:p-6 transition-colors ${history.length > 0 ? 'cursor-pointer' : ''} hover:bg-slate-50 dark:hover:bg-slate-900`}
+                                        onClick={() => !isEditing && history.length > 0 && toggleRow(dept._id)}
+                                        className={`p-3 sm:p-4 md:p-6 transition-colors ${!isEditing && history.length > 0 ? 'cursor-pointer' : ''} hover:bg-slate-50 dark:hover:bg-slate-900`}
                                     >
                                         <div className="flex items-center justify-between gap-3 sm:gap-4">
                                             {/* Rank and Name */}
@@ -155,27 +134,66 @@ const LeaderboardManagement = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Points Display */}
+                                            {/* Points Display or Edit Input */}
                                             <div className="text-right flex-shrink-0">
-                                                <div className="hidden sm:block text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Points</div>
-                                                <div className="text-2xl sm:text-4xl font-bold text-blue-500 tabular-nums">{dept.points}</div>
-                                                <div className="sm:hidden text-[10px] text-slate-400">pts</div>
+                                                {isEditing ? (
+                                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            value={editPoints}
+                                                            onChange={(e) => setEditPoints(e.target.value)}
+                                                            className="w-24 sm:w-32 px-3 py-2 text-lg font-bold text-blue-500 bg-slate-50 dark:bg-slate-700 border border-blue-300 dark:border-blue-600 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            autoFocus
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') handleSavePoints(dept._id);
+                                                                if (e.key === 'Escape') cancelEditing();
+                                                            }}
+                                                        />
+                                                        <button
+                                                            onClick={() => handleSavePoints(dept._id)}
+                                                            disabled={saving}
+                                                            className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 transition-all disabled:opacity-50"
+                                                            title="Save"
+                                                        >
+                                                            {saving ? (
+                                                                <span className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin inline-block" />
+                                                            ) : (
+                                                                <Check className="w-5 h-5" />
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={cancelEditing}
+                                                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400 transition-all"
+                                                            title="Cancel"
+                                                        >
+                                                            <X className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="hidden sm:block text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Points</div>
+                                                        <div className="text-2xl sm:text-4xl font-bold text-blue-500 tabular-nums">{dept.points}</div>
+                                                        <div className="sm:hidden text-[10px] text-slate-400">pts</div>
+                                                    </>
+                                                )}
                                             </div>
 
-                                            {/* Expand indicator + Admin Actions */}
-                                            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                                                {history.length > 0 && (
-                                                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                                )}
-                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteDepartmentPoints(dept._id); }} disabled={actionLoading === `delete-${dept._id}`}
-                                                    className="px-4 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg font-medium text-sm transition-all disabled:opacity-50">
-                                                    {actionLoading === `delete-${dept._id}` ? (
-                                                        <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
-                                                    ) : (
-                                                        <>Clear</>
+                                            {/* Expand indicator + Edit button */}
+                                            {!isEditing && (
+                                                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                                                    {history.length > 0 && (
+                                                        <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                                     )}
-                                                </button>
-                                            </div>
+                                                    <button onClick={(e) => { e.stopPropagation(); startEditing(dept); }}
+                                                        className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm transition-all flex items-center gap-1.5"
+                                                        title="Edit points"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                        <span className="hidden sm:inline">Edit</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -216,9 +234,6 @@ const LeaderboardManagement = () => {
                     </div>
                 )}
             </div>
-
-            <ConfirmModal isOpen={showConfirm.isOpen} title="Reset Leaderboard" message="This will permanently delete all department points. This action cannot be undone."
-                confirmText={actionLoading === 'reset' ? 'Resetting...' : 'Reset All'} onConfirm={handleResetLeaderboard} onCancel={() => setShowConfirm({ isOpen: false, action: null })} variant="danger" />
         </div>
     );
 };

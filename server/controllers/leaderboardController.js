@@ -401,7 +401,7 @@ const getDepartmentHistory = async (req, res) => {
         
         const total = await PointLog.countDocuments({ department: deptId });
         const totalPoints = await PointLog.aggregate([
-            { $match: { department: require('mongoose').Types.ObjectId(deptId) } },
+            { $match: { department: new (require('mongoose').Types.ObjectId)(deptId) } },
             { $group: { _id: null, total: { $sum: '$points' } } }
         ]);
         
@@ -418,6 +418,54 @@ const getDepartmentHistory = async (req, res) => {
     }
 };
 
+// @desc    Set department points to a specific value (creates an adjustment log)
+// @route   PUT /api/leaderboard/department/:deptId
+// @access  Private (Admin)
+const setDepartmentPoints = async (req, res) => {
+    try {
+        const { deptId } = req.params;
+        const { points } = req.body;
+
+        if (points === undefined || points < 0) {
+            return res.status(400).json({ success: false, message: 'Please provide a valid non-negative points value' });
+        }
+
+        // Get current total points for this department
+        const mongoose = require('mongoose');
+        const result = await PointLog.aggregate([
+            { $match: { department: new mongoose.Types.ObjectId(deptId) } },
+            { $group: { _id: null, total: { $sum: '$points' } } }
+        ]);
+
+        const currentTotal = result[0]?.total || 0;
+        const difference = points - currentTotal;
+
+        if (difference === 0) {
+            return res.json({ success: true, message: 'Points are already at this value' });
+        }
+
+        // Create an adjustment PointLog entry
+        await PointLog.create({
+            department: deptId,
+            eventName: 'Manual Adjustment',
+            category: 'Sports',
+            position: 'N/A',
+            points: difference,
+            description: `Admin adjusted total from ${currentTotal} to ${points}`
+        });
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('pointsAwarded', { department: deptId, points: difference });
+        }
+
+        res.json({ success: true, message: `Points updated from ${currentTotal} to ${points}` });
+    } catch (error) {
+        console.error('Error setting department points:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
 module.exports = {
     awardPoints,
     getStandings,
@@ -426,5 +474,6 @@ module.exports = {
     resetLeaderboard,
     undoLastAward,
     clearDepartmentPoints,
-    getDepartmentHistory
+    getDepartmentHistory,
+    setDepartmentPoints,
 };
