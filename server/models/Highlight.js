@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const highlightSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['reel', 'pic'],
+        enum: ['reel', 'pic', 'article'],
         required: [true, 'Highlight type is required']
     },
     instagramUrl: {

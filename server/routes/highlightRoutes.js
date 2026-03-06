@@ -21,16 +21,18 @@ router.get('/today', async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
 
-        const [reel, pic] = await Promise.all([
+        const [reel, pic, article] = await Promise.all([
             Highlight.findOne({ type: 'reel', date: today }).lean(),
-            Highlight.findOne({ type: 'pic', date: today }).lean()
+            Highlight.findOne({ type: 'pic', date: today }).lean(),
+            Highlight.findOne({ type: 'article', date: today }).lean()
         ]);
 
         res.json({
             success: true,
             data: {
                 reelOfTheDay: reel || null,
-                picOfTheDay: pic || null
+                picOfTheDay: pic || null,
+                articleOfTheDay: article || null
             }
         });
     } catch (err) {
@@ -66,9 +68,9 @@ router.post('/', protect, async (req, res) => {
         }
 
         // Validate type
-        if (!['reel', 'pic'].includes(type)) {
+        if (!['reel', 'pic', 'article'].includes(type)) {
             return res.status(400).json({
-                message: `Invalid type "${type}". Must be "reel" or "pic".`
+                message: `Invalid type "${type}". Must be "reel", "pic", or "article".`
             });
         }
 
@@ -82,8 +84,9 @@ router.post('/', protect, async (req, res) => {
         // Check if a highlight of this type already exists for this date
         const existing = await Highlight.findOne({ type, date });
         if (existing) {
+            const typeLabel = type === 'reel' ? 'Reel' : type === 'pic' ? 'Pic' : 'Article';
             return res.status(409).json({
-                message: `A ${type === 'reel' ? 'Reel' : 'Pic'} of the Day already exists for ${date}. Delete it first to upload a new one.`
+                message: `A ${typeLabel} of the Day already exists for ${date}. Delete it first to upload a new one.`
             });
         }
 

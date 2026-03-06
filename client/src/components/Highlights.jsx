@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Film, Camera, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Film, Camera, FileText, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import socket from '../socket';
 
@@ -54,7 +54,7 @@ const InstagramEmbed = ({ url, type }) => {
     if (error || !url) {
         return (
             <div className="flex items-center justify-center h-64 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500">
-                <p>No {type === 'reel' ? 'Reel' : 'Pic'} of the Day for this date</p>
+                <p>No {type === 'reel' ? 'Reel' : type === 'article' ? 'Article' : 'Pic'} of the Day for this date</p>
             </div>
         );
     }
@@ -133,6 +133,7 @@ const Highlights = () => {
 
     const reel = highlights.find(h => h.type === 'reel');
     const pic = highlights.find(h => h.type === 'pic');
+    const article = highlights.find(h => h.type === 'article');
 
     const goToPrevDate = () => {
         const idx = availableDates.indexOf(selectedDate);
@@ -251,6 +252,25 @@ const Highlights = () => {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Article of the Day — full-width below the grid */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+            >
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-emerald-500" />
+                    <h3 className="font-semibold text-slate-900 dark:text-white">Article of the Day</h3>
+                </div>
+                <div className="p-4">
+                    <InstagramEmbed url={article?.instagramUrl} type="article" />
+                    {article?.caption && (
+                        <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">{article.caption}</p>
+                    )}
+                </div>
+            </motion.div>
         </section>
     );
 };

@@ -123,6 +123,7 @@ const apiLimiter = rateLimit({
     message: { message: 'Too many requests. Please slow down.' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { keyGeneratorIpFallback: false },
     // Use X-Forwarded-For so students behind same NAT aren't counted as one
     keyGenerator: (req) => {
         return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;

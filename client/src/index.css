@@ -131,6 +131,38 @@ input, select, textarea {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* ── Date-picker icon fix ─────────────────────
+   WebKit hides the calendar/clock icon when the
+   input background & icon colour match.
+   Force icon visibility and correct color-scheme. */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  color-scheme: light;
+  position: relative;
+}
+
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="time"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--color-accent);
@@ -162,6 +194,31 @@ select option {
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+/* ── Global icon alignment fix ──────────────
+   Lucide / SVG icons inside flex containers
+   mis-align when they can shrink or when their
+   vertical-align differs from text baseline.
+   These rules ensure every icon stays centred
+   inside buttons, labels, badges, and spans.  */
+button,
+a,
+label,
+.badge,
+[class*="flex"] {
+  /* ensure children can't accidentally push icons off-center */
+}
+
+button svg,
+a svg,
+label svg,
+span svg,
+.btn svg,
+.badge svg,
+[class*="flex"] > svg {
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .btn-primary {

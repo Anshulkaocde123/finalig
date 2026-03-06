@@ -160,7 +160,7 @@ const ScoringPresets = () => {
                             <div className="flex items-center gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={formData.isDefault} onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-                                        className="w-5 h-5 rounded bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-blue-600 focus:ring-blue-500" />
+                                        className="w-4 h-4 rounded bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-blue-600 focus:ring-blue-500" />
                                     <span className="text-slate-600 dark:text-slate-400 font-medium">Set as default for this sport</span>
                                 </label>
                             </div>

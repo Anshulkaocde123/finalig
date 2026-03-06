@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Film, Camera, Trash2, Plus, Link, Calendar } from 'lucide-react';
+import { Film, Camera, FileText, Trash2, Plus, Link, Calendar } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -36,7 +36,7 @@ const AdminHighlights = () => {
             await axios.post('/api/highlights', form, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            toast.success(`${form.type === 'reel' ? 'Reel' : 'Pic'} of the Day uploaded!`);
+            toast.success(`${form.type === 'reel' ? 'Reel' : form.type === 'article' ? 'Article' : 'Pic'} of the Day uploaded!`);
             setForm({ type: 'reel', instagramUrl: '', caption: '', date: form.date });
             fetchHighlights();
         } catch (err) {
@@ -62,6 +62,7 @@ const AdminHighlights = () => {
 
     const existingReel = highlights.find(h => h.type === 'reel');
     const existingPic = highlights.find(h => h.type === 'pic');
+    const existingArticle = highlights.find(h => h.type === 'article');
 
     return (
         <div className="space-y-6">
@@ -83,12 +84,16 @@ const AdminHighlights = () => {
                         >
                             <option value="reel">Reel of the Day</option>
                             <option value="pic">Pic of the Day</option>
+                            <option value="article">Article of the Day</option>
                         </select>
                         {form.type === 'reel' && existingReel && (
                             <p className="text-xs text-amber-500 mt-1">⚠ A reel already exists for {selectedDate}. Delete it first.</p>
                         )}
                         {form.type === 'pic' && existingPic && (
                             <p className="text-xs text-amber-500 mt-1">⚠ A pic already exists for {selectedDate}. Delete it first.</p>
+                        )}
+                        {form.type === 'article' && existingArticle && (
+                            <p className="text-xs text-amber-500 mt-1">⚠ An article already exists for {selectedDate}. Delete it first.</p>
                         )}
                     </div>
                     <div>
@@ -153,10 +158,10 @@ const AdminHighlights = () => {
                             className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4"
                         >
                             <div className="flex items-center gap-3">
-                                {h.type === 'reel' ? <Film className="w-5 h-5 text-pink-500" /> : <Camera className="w-5 h-5 text-blue-500" />}
+                                {h.type === 'reel' ? <Film className="w-5 h-5 text-pink-500" /> : h.type === 'article' ? <FileText className="w-5 h-5 text-emerald-500" /> : <Camera className="w-5 h-5 text-blue-500" />}
                                 <div>
                                     <p className="font-medium text-slate-900 dark:text-white">
-                                        {h.type === 'reel' ? 'Reel' : 'Pic'} of the Day
+                                        {h.type === 'reel' ? 'Reel' : h.type === 'article' ? 'Article' : 'Pic'} of the Day
                                     </p>
                                     <a href={h.instagramUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline truncate block max-w-xs">
                                         {h.instagramUrl}

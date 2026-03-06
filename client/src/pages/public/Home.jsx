@@ -6,7 +6,7 @@ import MatchCard from '../../components/MatchCard';
 import { MatchCardSkeleton, HighlightSkeleton } from '../../components/SkeletonLoader';
 import { SPORT_ICONS, SPORTS } from '../../lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Film, Trophy, Sparkles, RefreshCw, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, Film, FileText, Trophy, Sparkles, RefreshCw, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Timezone-safe local date helper (avoids UTC offset issues with toISOString)
 const getLocalDateStr = (date = new Date()) => {
@@ -36,7 +36,8 @@ const Home = () => {
             const data = res.data.data || res.data || [];
             const reel = data.find(h => h.type === 'reel') || null;
             const pic = data.find(h => h.type === 'pic') || null;
-            setHighlights({ reelOfTheDay: reel, picOfTheDay: pic });
+            const article = data.find(h => h.type === 'article') || null;
+            setHighlights({ reelOfTheDay: reel, picOfTheDay: pic, articleOfTheDay: article });
         } catch {
             setHighlights({});
         }
@@ -188,6 +189,7 @@ const Home = () => {
 
     const reelOfDay = highlights.reelOfTheDay || null;
     const picOfDay = highlights.picOfTheDay || null;
+    const articleOfDay = highlights.articleOfTheDay || null;
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
@@ -296,7 +298,7 @@ const Home = () => {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* --- REEL OF THE DAY --- */}
                         {loading ? <HighlightSkeleton /> : reelOfDay ? (
                             <motion.div
@@ -362,6 +364,40 @@ const Home = () => {
                                 <h3 className="font-semibold text-slate-600 mb-1">Pic of the Day</h3>
                                 <p className="text-sm text-slate-400">No photo posted today yet</p>
                                 <p className="text-xs text-slate-300 mt-1.5">Check back for stunning captures! 📸</p>
+                            </div>
+                        )}
+
+                        {/* --- ARTICLE OF THE DAY --- */}
+                        {loading ? <HighlightSkeleton /> : articleOfDay ? (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 border border-emerald-200 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="p-1.5 bg-emerald-100 rounded-lg">
+                                        <FileText className="w-4 h-4 text-emerald-600" />
+                                    </div>
+                                    <span className="text-sm font-bold text-emerald-700">Article of the Day</span>
+                                </div>
+                                {articleOfDay.caption && (
+                                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{articleOfDay.caption}</p>
+                                )}
+                                {articleOfDay.instagramUrl && (
+                                    <a href={articleOfDay.instagramUrl} target="_blank" rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md active:scale-95">
+                                        <FileText className="w-3.5 h-3.5" /> Read on Instagram
+                                        <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
+                                    </a>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <div className="border-2 border-dashed border-emerald-200 rounded-2xl p-6 sm:p-8 text-center bg-emerald-50/30">
+                                <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <FileText className="w-7 h-7 text-emerald-300" />
+                                </div>
+                                <h3 className="font-semibold text-slate-600 mb-1">Article of the Day</h3>
+                                <p className="text-sm text-slate-400">No article posted today yet</p>
+                                <p className="text-xs text-slate-300 mt-1.5">Check back for event coverage! 📝</p>
                             </div>
                         )}
                     </div>

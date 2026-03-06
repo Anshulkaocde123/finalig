@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Film, Camera, Plus, Trash2, X, Save, Calendar, ExternalLink } from 'lucide-react';
+import { Sparkles, Film, Camera, FileText, Plus, Trash2, X, Save, Calendar, ExternalLink } from 'lucide-react';
 
 const HighlightManagement = () => {
     const [highlights, setHighlights] = useState([]);
@@ -75,7 +75,7 @@ const HighlightManagement = () => {
                             <Sparkles className="w-6 h-6 text-amber-500" />
                             Highlights
                         </h1>
-                        <p className="text-sm text-slate-500 mt-1">Manage Reel & Pic of the Day (Instagram embeds)</p>
+                        <p className="text-sm text-slate-500 mt-1">Manage Reel, Pic & Article of the Day (Instagram embeds)</p>
                     </div>
                     <button onClick={() => { resetForm(); setShowForm(true); }}
                         className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
@@ -101,7 +101,7 @@ const HighlightManagement = () => {
 
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     {/* Type Selection */}
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-3 gap-3">
                                         <button type="button"
                                             onClick={() => setFormData(prev => ({ ...prev, type: 'reel' }))}
                                             className={`p-3 rounded-lg border text-center transition-colors ${
@@ -117,6 +117,14 @@ const HighlightManagement = () => {
                                             }`}>
                                             <Camera className="w-5 h-5 mx-auto mb-1" />
                                             <div className="text-xs font-medium">Pic of the Day</div>
+                                        </button>
+                                        <button type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, type: 'article' }))}
+                                            className={`p-3 rounded-lg border text-center transition-colors ${
+                                                formData.type === 'article' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                                            }`}>
+                                            <FileText className="w-5 h-5 mx-auto mb-1" />
+                                            <div className="text-xs font-medium">Article of the Day</div>
                                         </button>
                                     </div>
 
@@ -175,17 +183,19 @@ const HighlightManagement = () => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 className={`bg-white border rounded-xl p-4 ${
-                                    h.type === 'reel' ? 'border-purple-200' : 'border-amber-200'
+                                    h.type === 'reel' ? 'border-purple-200' : h.type === 'article' ? 'border-emerald-200' : 'border-amber-200'
                                 }`}>
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-2 mb-2">
                                         {h.type === 'reel' ? (
                                             <Film className="w-4 h-4 text-purple-500" />
+                                        ) : h.type === 'article' ? (
+                                            <FileText className="w-4 h-4 text-emerald-500" />
                                         ) : (
                                             <Camera className="w-4 h-4 text-amber-500" />
                                         )}
-                                        <span className={`text-xs font-semibold ${h.type === 'reel' ? 'text-purple-600' : 'text-amber-600'}`}>
-                                            {h.type === 'reel' ? 'Reel' : 'Pic'} of the Day
+                                        <span className={`text-xs font-semibold ${h.type === 'reel' ? 'text-purple-600' : h.type === 'article' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                            {h.type === 'reel' ? 'Reel' : h.type === 'article' ? 'Article' : 'Pic'} of the Day
                                         </span>
                                     </div>
                                     <button onClick={() => deleteHighlight(h._id)} className="p-1 text-slate-400 hover:text-red-500">
