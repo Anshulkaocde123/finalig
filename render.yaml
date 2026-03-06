@@ -2,7 +2,7 @@ services:
   - type: web
     name: vnit-ig-backend
     runtime: node
-    region: oregon
+    region: singapore
     plan: free
     buildCommand: npm run build
     startCommand: npm run serve
