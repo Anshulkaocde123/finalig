@@ -8,7 +8,9 @@ router.get('/', async (req, res) => {
     try {
         const { date } = req.query;
         const query = date ? { date } : {};
-        const highlights = await Highlight.find(query).sort({ date: -1, type: 1 });
+        const highlights = await Highlight.find(query)
+            .populate('department', 'name shortCode')
+            .sort({ date: -1, type: 1 });
         res.json({ success: true, data: highlights });
     } catch (err) {
         console.error('❌ GET /highlights error:', err);
@@ -22,9 +24,9 @@ router.get('/today', async (req, res) => {
         const today = new Date().toISOString().split('T')[0];
 
         const [reel, pic, article] = await Promise.all([
-            Highlight.findOne({ type: 'reel', date: today }).lean(),
-            Highlight.findOne({ type: 'pic', date: today }).lean(),
-            Highlight.findOne({ type: 'article', date: today }).lean()
+            Highlight.findOne({ type: 'reel', date: today }).populate('department', 'name shortCode').lean(),
+            Highlight.findOne({ type: 'pic', date: today }).populate('department', 'name shortCode').lean(),
+            Highlight.findOne({ type: 'article', date: today }).populate('department', 'name shortCode').lean()
         ]);
 
         res.json({
@@ -56,14 +58,14 @@ router.get('/dates', async (req, res) => {
 // POST create highlight (admin only)
 router.post('/', protect, async (req, res) => {
     try {
-        const { type, instagramUrl, caption, date } = req.body;
+        const { type, instagramUrl, caption, content, department, date } = req.body;
 
         console.log('📝 Create highlight request body:', req.body);
 
-        if (!type || !instagramUrl || !date) {
+        if (!type || !date) {
             return res.status(400).json({
-                message: 'type, instagramUrl and date are required',
-                received: { type, instagramUrl: !!instagramUrl, date }
+                message: 'type and date are required',
+                received: { type, date }
             });
         }
 
@@ -72,6 +74,14 @@ router.post('/', protect, async (req, res) => {
             return res.status(400).json({
                 message: `Invalid type "${type}". Must be "reel", "pic", or "article".`
             });
+        }
+
+        // Article requires content; reel/pic require instagramUrl
+        if (type === 'article' && !content) {
+            return res.status(400).json({ message: 'Article content is required.' });
+        }
+        if ((type === 'reel' || type === 'pic') && !instagramUrl) {
+            return res.status(400).json({ message: 'Instagram URL is required for reel/pic.' });
         }
 
         // Validate date format (YYYY-MM-DD)
@@ -92,11 +102,16 @@ router.post('/', protect, async (req, res) => {
 
         const highlight = new Highlight({
             type,
-            instagramUrl: instagramUrl.trim(),
+            instagramUrl: instagramUrl ? instagramUrl.trim() : '',
             caption: caption || '',
+            content: content || '',
+            department: department || null,
             date
         });
         await highlight.save();
+
+        // Populate department before emitting / returning
+        await highlight.populate('department', 'name shortCode');
 
         // Emit socket event if available
         const io = req.app.get('io');

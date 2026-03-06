@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Film, Camera, FileText, Trash2, Plus, Link, Calendar } from 'lucide-react';
+import { Film, Camera, FileText, Trash2, Plus, Link, Calendar, Award } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const AdminHighlights = () => {
     const [highlights, setHighlights] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [form, setForm] = useState({ type: 'reel', instagramUrl: '', caption: '', date: new Date().toISOString().split('T')[0] });
+    const [form, setForm] = useState({ type: 'reel', instagramUrl: '', caption: '', content: '', department: '', date: new Date().toISOString().split('T')[0] });
     const [loading, setLoading] = useState(false);
 
     const token = localStorage.getItem('token');
@@ -25,19 +26,35 @@ const AdminHighlights = () => {
         fetchHighlights();
     }, [fetchHighlights]);
 
+    useEffect(() => {
+        const fetchDepts = async () => {
+            try {
+                const { data } = await axios.get('/api/departments');
+                setDepartments(data.data || []);
+            } catch (err) { console.error('Failed to load departments'); }
+        };
+        fetchDepts();
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.instagramUrl) {
-            toast.error('Instagram URL is required');
-            return;
+        if (form.type === 'article') {
+            if (!form.content.trim()) { toast.error('Article content is required'); return; }
+        } else {
+            if (!form.instagramUrl) { toast.error('Instagram URL is required'); return; }
         }
         setLoading(true);
         try {
-            await axios.post('/api/highlights', form, {
+            const payload = { type: form.type, caption: form.caption, date: form.date };
+            if (form.type === 'article') { payload.content = form.content; }
+            else { payload.instagramUrl = form.instagramUrl; }
+            if (form.department) { payload.department = form.department; }
+
+            await axios.post('/api/highlights', payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success(`${form.type === 'reel' ? 'Reel' : form.type === 'article' ? 'Article' : 'Pic'} of the Day uploaded!`);
-            setForm({ type: 'reel', instagramUrl: '', caption: '', date: form.date });
+            setForm({ type: 'reel', instagramUrl: '', caption: '', content: '', department: '', date: form.date });
             fetchHighlights();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to upload highlight');
@@ -108,28 +125,63 @@ const AdminHighlights = () => {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        <Link className="w-4 h-4 inline mr-1" /> Instagram URL
-                    </label>
-                    <input
-                        type="url"
-                        value={form.instagramUrl}
-                        onChange={(e) => setForm({ ...form, instagramUrl: e.target.value })}
-                        placeholder="https://www.instagram.com/reel/... or https://www.instagram.com/p/..."
-                        className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
-                        required
-                    />
+                    {form.type === 'article' ? (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <FileText className="w-4 h-4 inline mr-1" /> Article Content *
+                            </label>
+                            <textarea
+                                value={form.content}
+                                onChange={(e) => setForm({ ...form, content: e.target.value })}
+                                rows={6}
+                                placeholder="Write or paste the article text here..."
+                                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white resize-y"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">{form.content.length} / 10,000 characters</p>
+                        </div>
+                    ) : (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <Link className="w-4 h-4 inline mr-1" /> Instagram URL *
+                            </label>
+                            <input
+                                type="url"
+                                value={form.instagramUrl}
+                                onChange={(e) => setForm({ ...form, instagramUrl: e.target.value })}
+                                placeholder="https://www.instagram.com/reel/... or https://www.instagram.com/p/..."
+                                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                required
+                            />
+                        </div>
+                    )}
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Caption (optional)</label>
-                    <input
-                        type="text"
-                        value={form.caption}
-                        onChange={(e) => setForm({ ...form, caption: e.target.value })}
-                        placeholder="Optional caption"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Caption (optional)</label>
+                        <input
+                            type="text"
+                            value={form.caption}
+                            onChange={(e) => setForm({ ...form, caption: e.target.value })}
+                            placeholder="Optional caption"
+                            className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <Award className="w-4 h-4 inline mr-1" /> Department (optional)
+                        </label>
+                        <select
+                            value={form.department}
+                            onChange={(e) => setForm({ ...form, department: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                        >
+                            <option value="">— None —</option>
+                            {departments.map(d => (
+                                <option key={d._id} value={d._id}>{d.shortCode} — {d.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <button
@@ -150,7 +202,9 @@ const AdminHighlights = () => {
                 {highlights.length === 0 ? (
                     <p className="text-sm text-slate-500">No highlights for this date.</p>
                 ) : (
-                    highlights.map(h => (
+                    highlights.map(h => {
+                        const deptName = h.department ? (typeof h.department === 'object' ? (h.department.shortCode || h.department.name) : null) : null;
+                        return (
                         <motion.div
                             key={h._id}
                             initial={{ opacity: 0 }}
@@ -160,12 +214,21 @@ const AdminHighlights = () => {
                             <div className="flex items-center gap-3">
                                 {h.type === 'reel' ? <Film className="w-5 h-5 text-pink-500" /> : h.type === 'article' ? <FileText className="w-5 h-5 text-emerald-500" /> : <Camera className="w-5 h-5 text-blue-500" />}
                                 <div>
-                                    <p className="font-medium text-slate-900 dark:text-white">
+                                    <p className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
                                         {h.type === 'reel' ? 'Reel' : h.type === 'article' ? 'Article' : 'Pic'} of the Day
+                                        {deptName && (
+                                            <span className="text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
+                                                <Award className="w-2.5 h-2.5 inline mr-0.5" />{deptName}
+                                            </span>
+                                        )}
                                     </p>
-                                    <a href={h.instagramUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline truncate block max-w-xs">
-                                        {h.instagramUrl}
-                                    </a>
+                                    {h.type === 'article' && h.content ? (
+                                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{h.content}</p>
+                                    ) : h.instagramUrl ? (
+                                        <a href={h.instagramUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline truncate block max-w-xs">
+                                            {h.instagramUrl}
+                                        </a>
+                                    ) : null}
                                     {h.caption && <p className="text-xs text-slate-500 mt-1">{h.caption}</p>}
                                 </div>
                             </div>
@@ -176,7 +239,8 @@ const AdminHighlights = () => {
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </motion.div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>

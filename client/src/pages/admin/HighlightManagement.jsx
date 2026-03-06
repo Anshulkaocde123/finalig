@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Film, Camera, FileText, Plus, Trash2, X, Save, Calendar, ExternalLink } from 'lucide-react';
+import { Sparkles, Film, Camera, FileText, Plus, Trash2, X, Save, Calendar, ExternalLink, Award } from 'lucide-react';
 
 const HighlightManagement = () => {
     const [highlights, setHighlights] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -13,6 +14,8 @@ const HighlightManagement = () => {
         type: 'reel',
         instagramUrl: '',
         caption: '',
+        content: '',
+        department: '',
         date: new Date().toISOString().split('T')[0]
     });
 
@@ -25,13 +28,22 @@ const HighlightManagement = () => {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchHighlights(); }, []);
+    const fetchDepartments = async () => {
+        try {
+            const res = await api.get('/departments');
+            setDepartments(res.data.data || []);
+        } catch (err) { console.error('Failed to load departments'); }
+    };
+
+    useEffect(() => { fetchHighlights(); fetchDepartments(); }, []);
 
     const resetForm = () => {
         setFormData({
             type: 'reel',
             instagramUrl: '',
             caption: '',
+            content: '',
+            department: '',
             date: new Date().toISOString().split('T')[0]
         });
         setShowForm(false);
@@ -39,16 +51,30 @@ const HighlightManagement = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.instagramUrl) { toast.error('Instagram URL is required'); return; }
+
+        if (formData.type === 'article') {
+            if (!formData.content.trim()) { toast.error('Article content is required'); return; }
+        } else {
+            if (!formData.instagramUrl) { toast.error('Instagram URL is required'); return; }
+        }
 
         setSaving(true);
         try {
-            await api.post('/highlights', {
+            const payload = {
                 type: formData.type,
-                instagramUrl: formData.instagramUrl,
                 caption: formData.caption,
-                date: formData.date
-            });
+                date: formData.date,
+            };
+            if (formData.type === 'article') {
+                payload.content = formData.content;
+            } else {
+                payload.instagramUrl = formData.instagramUrl;
+            }
+            if (formData.department) {
+                payload.department = formData.department;
+            }
+
+            await api.post('/highlights', payload);
             toast.success('Highlight created!');
             resetForm();
             fetchHighlights();
@@ -75,7 +101,7 @@ const HighlightManagement = () => {
                             <Sparkles className="w-6 h-6 text-amber-500" />
                             Highlights
                         </h1>
-                        <p className="text-sm text-slate-500 mt-1">Manage Reel, Pic & Article of the Day (Instagram embeds)</p>
+                        <p className="text-sm text-slate-500 mt-1">Manage Reel, Pic & Article of the Day</p>
                     </div>
                     <button onClick={() => { resetForm(); setShowForm(true); }}
                         className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
@@ -128,14 +154,25 @@ const HighlightManagement = () => {
                                         </button>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-600 mb-1">Instagram URL *</label>
-                                        <input type="url" value={formData.instagramUrl}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, instagramUrl: e.target.value }))}
-                                            placeholder="https://www.instagram.com/reel/... or https://www.instagram.com/p/..."
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                                        <p className="text-xs text-slate-400 mt-1">Paste the full Instagram post or reel URL</p>
-                                    </div>
+                                    {/* Conditional: Instagram URL for reel/pic, Textarea for article */}
+                                    {formData.type === 'article' ? (
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-600 mb-1">Article Content *</label>
+                                            <textarea value={formData.content}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                                                rows={8} placeholder="Write or paste the article text here..."
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 resize-y" />
+                                            <p className="text-xs text-slate-400 mt-1">{formData.content.length} / 10,000 characters</p>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-600 mb-1">Instagram URL *</label>
+                                            <input type="url" value={formData.instagramUrl}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, instagramUrl: e.target.value }))}
+                                                placeholder="https://www.instagram.com/reel/... or https://www.instagram.com/p/..."
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                    )}
 
                                     <div>
                                         <label className="block text-xs font-medium text-slate-600 mb-1">Caption (optional)</label>
@@ -145,11 +182,26 @@ const HighlightManagement = () => {
                                             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
-                                        <input type="date" value={formData.date}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
+                                            <input type="date" value={formData.date}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-600 mb-1">
+                                                <Award className="w-3 h-3 inline mr-1" />Department (optional)
+                                            </label>
+                                            <select value={formData.department}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="">— None —</option>
+                                                {departments.map(d => (
+                                                    <option key={d._id} value={d._id}>{d.shortCode} — {d.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
 
                                     <div className="flex gap-2 pt-1">
@@ -178,7 +230,9 @@ const HighlightManagement = () => {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {highlights.map((h) => (
+                        {highlights.map((h) => {
+                            const deptName = h.department ? (typeof h.department === 'object' ? (h.department.shortCode || h.department.name) : null) : null;
+                            return (
                             <motion.div key={h._id}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -197,6 +251,11 @@ const HighlightManagement = () => {
                                         <span className={`text-xs font-semibold ${h.type === 'reel' ? 'text-purple-600' : h.type === 'article' ? 'text-emerald-600' : 'text-amber-600'}`}>
                                             {h.type === 'reel' ? 'Reel' : h.type === 'article' ? 'Article' : 'Pic'} of the Day
                                         </span>
+                                        {deptName && (
+                                            <span className="text-[10px] font-medium bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                                <Award className="w-2.5 h-2.5" /> {deptName}
+                                            </span>
+                                        )}
                                     </div>
                                     <button onClick={() => deleteHighlight(h._id)} className="p-1 text-slate-400 hover:text-red-500">
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -204,6 +263,10 @@ const HighlightManagement = () => {
                                 </div>
 
                                 {h.caption && <p className="text-sm text-slate-700 mb-2">{h.caption}</p>}
+
+                                {h.type === 'article' && h.content && (
+                                    <p className="text-sm text-slate-600 mb-2 line-clamp-3 whitespace-pre-line">{h.content}</p>
+                                )}
 
                                 <div className="flex items-center gap-3 text-[11px] text-slate-400">
                                     {h.date && (
@@ -220,7 +283,8 @@ const HighlightManagement = () => {
                                     )}
                                 </div>
                             </motion.div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

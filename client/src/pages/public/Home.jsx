@@ -6,7 +6,7 @@ import MatchCard from '../../components/MatchCard';
 import { MatchCardSkeleton, HighlightSkeleton } from '../../components/SkeletonLoader';
 import { SPORT_ICONS, SPORTS } from '../../lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Film, FileText, Trophy, Sparkles, RefreshCw, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, Film, FileText, Trophy, Sparkles, RefreshCw, ExternalLink, ChevronLeft, ChevronRight, Award } from 'lucide-react';
 
 // Timezone-safe local date helper (avoids UTC offset issues with toISOString)
 const getLocalDateStr = (date = new Date()) => {
@@ -310,6 +310,12 @@ const Home = () => {
                                         <Film className="w-4 h-4 text-purple-600" />
                                     </div>
                                     <span className="text-sm font-bold text-purple-700">Reel of the Day</span>
+                                    {reelOfDay.department && (
+                                        <span className="ml-auto text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                            <Award className="w-2.5 h-2.5" />
+                                            {typeof reelOfDay.department === 'object' ? (reelOfDay.department.shortCode || reelOfDay.department.name) : reelOfDay.department}
+                                        </span>
+                                    )}
                                 </div>
                                 {reelOfDay.caption && (
                                     <p className="text-sm text-slate-600 mb-4 line-clamp-2">{reelOfDay.caption}</p>
@@ -344,6 +350,12 @@ const Home = () => {
                                         <Camera className="w-4 h-4 text-amber-600" />
                                     </div>
                                     <span className="text-sm font-bold text-amber-700">Pic of the Day</span>
+                                    {picOfDay.department && (
+                                        <span className="ml-auto text-[10px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                            <Award className="w-2.5 h-2.5" />
+                                            {typeof picOfDay.department === 'object' ? (picOfDay.department.shortCode || picOfDay.department.name) : picOfDay.department}
+                                        </span>
+                                    )}
                                 </div>
                                 {picOfDay.caption && (
                                     <p className="text-sm text-slate-600 mb-4 line-clamp-2">{picOfDay.caption}</p>
@@ -378,17 +390,25 @@ const Home = () => {
                                         <FileText className="w-4 h-4 text-emerald-600" />
                                     </div>
                                     <span className="text-sm font-bold text-emerald-700">Article of the Day</span>
+                                    {articleOfDay.department && (
+                                        <span className="ml-auto text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                            <Award className="w-2.5 h-2.5" />
+                                            {typeof articleOfDay.department === 'object' ? (articleOfDay.department.shortCode || articleOfDay.department.name) : articleOfDay.department}
+                                        </span>
+                                    )}
                                 </div>
                                 {articleOfDay.caption && (
-                                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{articleOfDay.caption}</p>
+                                    <p className="text-xs font-medium text-emerald-600 mb-2">{articleOfDay.caption}</p>
                                 )}
-                                {articleOfDay.instagramUrl && (
+                                {articleOfDay.content ? (
+                                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line line-clamp-6">{articleOfDay.content}</p>
+                                ) : articleOfDay.instagramUrl ? (
                                     <a href={articleOfDay.instagramUrl} target="_blank" rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md active:scale-95">
                                         <FileText className="w-3.5 h-3.5" /> Read on Instagram
                                         <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
                                     </a>
-                                )}
+                                ) : null}
                             </motion.div>
                         ) : (
                             <div className="border-2 border-dashed border-emerald-200 rounded-2xl p-6 sm:p-8 text-center bg-emerald-50/30">

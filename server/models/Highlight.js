@@ -8,12 +8,24 @@ const highlightSchema = new mongoose.Schema({
     },
     instagramUrl: {
         type: String,
-        required: [true, 'Instagram URL is required']
+        default: ''
     },
     caption: {
         type: String,
         default: '',
         maxlength: 500
+    },
+    // Article body text (only used when type === 'article')
+    content: {
+        type: String,
+        default: '',
+        maxlength: 10000
+    },
+    // Optional — which department won this highlight
+    department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Department',
+        default: null
     },
     date: {
         type: String, // 'YYYY-MM-DD' format

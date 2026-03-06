@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Film, Camera, FileText, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Film, Camera, FileText, Calendar, ChevronLeft, ChevronRight, Award } from 'lucide-react';
 import axios from 'axios';
 import socket from '../socket';
 
@@ -224,6 +224,12 @@ const Highlights = () => {
                     <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
                         <Film className="w-5 h-5 text-pink-500" />
                         <h3 className="font-semibold text-slate-900 dark:text-white">Reel of the Day</h3>
+                        {reel?.department && (
+                            <span className="ml-auto text-[10px] font-semibold bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                <Award className="w-2.5 h-2.5" />
+                                {typeof reel.department === 'object' ? (reel.department.shortCode || reel.department.name) : reel.department}
+                            </span>
+                        )}
                     </div>
                     <div className="p-4">
                         <InstagramEmbed url={reel?.instagramUrl} type="reel" />
@@ -243,6 +249,12 @@ const Highlights = () => {
                     <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
                         <Camera className="w-5 h-5 text-blue-500" />
                         <h3 className="font-semibold text-slate-900 dark:text-white">Pic of the Day</h3>
+                        {pic?.department && (
+                            <span className="ml-auto text-[10px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                <Award className="w-2.5 h-2.5" />
+                                {typeof pic.department === 'object' ? (pic.department.shortCode || pic.department.name) : pic.department}
+                            </span>
+                        )}
                     </div>
                     <div className="p-4">
                         <InstagramEmbed url={pic?.instagramUrl} type="pic" />
@@ -263,9 +275,21 @@ const Highlights = () => {
                 <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-emerald-500" />
                     <h3 className="font-semibold text-slate-900 dark:text-white">Article of the Day</h3>
+                    {article?.department && (
+                        <span className="ml-auto text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                            <Award className="w-2.5 h-2.5" />
+                            {typeof article.department === 'object' ? (article.department.shortCode || article.department.name) : article.department}
+                        </span>
+                    )}
                 </div>
                 <div className="p-4">
-                    <InstagramEmbed url={article?.instagramUrl} type="article" />
+                    {article?.content ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{article.content}</p>
+                        </div>
+                    ) : (
+                        <InstagramEmbed url={article?.instagramUrl} type="article" />
+                    )}
                     {article?.caption && (
                         <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">{article.caption}</p>
                     )}
