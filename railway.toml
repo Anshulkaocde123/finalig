@@ -1,6 +1,12 @@
 [build]
 builder = "nixpacks"
 
+[build.nixpacks]
+# Only install server dependencies (frontend deploys to Vercel separately)
+installCmd = "cd server && npm ci --omit=dev"
+
 [deploy]
-startCommand = "npm install && npm --prefix client install && npm --prefix client run build && npm --prefix server install && npm --prefix server start"
+startCommand = "cd server && node start.js"
 restartPolicyMaxRetries = 5
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300

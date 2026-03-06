@@ -40,6 +40,10 @@ connectDB()
 
 const app = express();
 
+// Trust first proxy (Railway / Render / Heroku reverse proxy)
+// Required for express-rate-limit, req.ip, and secure cookies behind a proxy
+app.set('trust proxy', 1);
+
 // Create HTTP server for Socket.io
 const server = http.createServer(app);
 

@@ -1,11 +1,12 @@
 services:
   - type: web
-    name: vnit-ig-app
+    name: vnit-ig-backend
     runtime: node
-    region: frankfurt
+    region: oregon
     plan: free
     buildCommand: npm run build
     startCommand: npm run serve
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,4 +17,12 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: CORS_ORIGIN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+      - key: BASE_URL
         sync: false
