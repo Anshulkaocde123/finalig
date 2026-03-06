@@ -102,7 +102,11 @@ const getStandings = async (req, res) => {
             }
         }
 
-        finalStandings.sort((a, b) => b.points - a.points);
+        // Stable sort: points desc → name asc (consistent ordering for ties)
+        finalStandings.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            return (a.name || '').localeCompare(b.name || '');
+        });
 
         res.json({ 
             success: true, 
@@ -127,51 +131,90 @@ const getStandings = async (req, res) => {
 const getDetailedStandings = async (req, res) => {
     try {
         const { Match } = require('../models/Match');
-        
-        // Get all departments
-        const departments = await Department.find({});
-        
-        const standings = await Promise.all(departments.map(async (dept) => {
-            // Get points from PointLog
-            const pointLogs = await PointLog.find({ department: dept._id });
-            const totalPoints = pointLogs.reduce((sum, log) => sum + log.points, 0);
-            
-            // Get match statistics
-            const matchesAsTeamA = await Match.countDocuments({ teamA: dept._id, status: 'COMPLETED' });
-            const matchesAsTeamB = await Match.countDocuments({ teamB: dept._id, status: 'COMPLETED' });
-            const wins = await Match.countDocuments({ winner: dept._id, status: 'COMPLETED' });
-            
-            const totalMatches = matchesAsTeamA + matchesAsTeamB;
-            const losses = totalMatches - wins;
-            
-            // Get wins by sport
-            const sportWins = await Match.aggregate([
-                { $match: { winner: dept._id, status: 'COMPLETED' } },
-                { $group: { _id: '$sport', count: { $sum: 1 } } }
-            ]);
-            
+        const mongoose = require('mongoose');
+
+        // ── Aggregate points in a single pipeline (replaces N+1) ──
+        const [departments, pointAgg, matchAgg, sportWinAgg, recentLogs] = await Promise.all([
+            Department.find({}).lean(),
+
+            // Total points per department (1 query)
+            PointLog.aggregate([
+                { $group: { _id: '$department', points: { $sum: '$points' }, eventCount: { $sum: 1 } } }
+            ]),
+
+            // Match statistics per department (1 query via $facet)
+            Match.aggregate([
+                { $match: { status: 'COMPLETED' } },
+                { $facet: {
+                    teamA: [{ $group: { _id: '$teamA', count: { $sum: 1 } } }],
+                    teamB: [{ $group: { _id: '$teamB', count: { $sum: 1 } } }],
+                    wins:  [{ $group: { _id: '$winner', count: { $sum: 1 } } }]
+                }}
+            ]),
+
+            // Wins by sport per department (1 query)
+            Match.aggregate([
+                { $match: { status: 'COMPLETED', winner: { $ne: null } } },
+                { $group: { _id: { dept: '$winner', sport: '$sport' }, count: { $sum: 1 } } }
+            ]),
+
+            // Last 10 point logs per department (1 query)
+            PointLog.aggregate([
+                { $sort: { createdAt: -1 } },
+                { $group: { _id: '$department', logs: { $push: '$$ROOT' } } },
+                { $project: { logs: { $slice: ['$logs', 10] } } }
+            ])
+        ]);
+
+        // Build lookup maps
+        const pointsMap = new Map(pointAgg.map(p => [p._id.toString(), p]));
+
+        const matchData = matchAgg[0] || { teamA: [], teamB: [], wins: [] };
+        const teamAMap = new Map(matchData.teamA.map(t => [t._id.toString(), t.count]));
+        const teamBMap = new Map(matchData.teamB.map(t => [t._id.toString(), t.count]));
+        const winsMap  = new Map(matchData.wins.filter(w => w._id).map(w => [w._id.toString(), w.count]));
+
+        const sportWinsMap = new Map();
+        for (const sw of sportWinAgg) {
+            const key = sw._id.dept.toString();
+            if (!sportWinsMap.has(key)) sportWinsMap.set(key, {});
+            sportWinsMap.get(key)[sw._id.sport] = sw.count;
+        }
+
+        const logsMap = new Map(recentLogs.map(l => [l._id.toString(), l.logs]));
+
+        // Assemble standings (zero DB queries in this loop)
+        const standings = departments.map(dept => {
+            const id = dept._id.toString();
+            const pts = pointsMap.get(id);
+            const totalPoints = pts?.points || 0;
+            const played = (teamAMap.get(id) || 0) + (teamBMap.get(id) || 0);
+            const wins = winsMap.get(id) || 0;
+            const losses = played - wins;
+
             return {
                 _id: dept._id,
                 name: dept.name,
                 shortCode: dept.shortCode,
                 logo: dept.logo,
                 points: totalPoints,
-                matchesPlayed: totalMatches,
+                matchesPlayed: played,
                 wins,
                 losses,
-                winPercentage: totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0,
-                sportWins: sportWins.reduce((acc, s) => { acc[s._id] = s.count; return acc; }, {}),
-                history: pointLogs.slice(-10).reverse()
+                winPercentage: played > 0 ? Math.round((wins / played) * 100) : 0,
+                sportWins: sportWinsMap.get(id) || {},
+                history: (logsMap.get(id) || []).reverse()
             };
-        }));
-        
-        // Sort by points, then by wins
+        });
+
+        // Stable sort: points → wins → win% → name
         standings.sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
             if (b.wins !== a.wins) return b.wins - a.wins;
-            return b.winPercentage - a.winPercentage;
+            if (b.winPercentage !== a.winPercentage) return b.winPercentage - a.winPercentage;
+            return (a.name || '').localeCompare(b.name || '');
         });
-        
+
         res.json({
             success: true,
             count: standings.length,
@@ -208,6 +251,14 @@ const awardPointsFromMatch = async (req, res) => {
         
         if (match.status !== 'COMPLETED') {
             return res.status(400).json({ message: 'Match is not completed' });
+        }
+
+        // ── Idempotency guard: prevent double-awarding ──
+        if (match.pointsAwarded) {
+            return res.status(409).json({
+                success: false,
+                message: 'Points have already been awarded for this match'
+            });
         }
         
         // Get scoring preset
@@ -298,6 +349,9 @@ const awardPointsFromMatch = async (req, res) => {
             }
         }
         
+        // ── Mark match as points-awarded (atomic) ──
+        await Match.findByIdAndUpdate(matchId, { pointsAwarded: true });
+
         // Emit real-time update
         const io = req.app.get('io');
         if (io) {

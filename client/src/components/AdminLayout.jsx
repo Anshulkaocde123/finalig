@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Building2, Calendar, Radio, Star, Trophy, Target, Settings, Users, GraduationCap, BookOpen, LogOut, Menu, X, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import Footer from './Footer';
 
 const AdminLayout = () => {
     const location = useLocation();
@@ -160,6 +161,7 @@ const AdminLayout = () => {
                 <div className="p-4 sm:p-6 lg:p-8">
                     <Outlet />
                 </div>
+                <Footer />
             </main>
         </div>
     );

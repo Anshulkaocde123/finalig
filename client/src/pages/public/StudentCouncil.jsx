@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PublicNavbar from '../../components/PublicNavbar';
+import Footer from '../../components/Footer';
 import axios from '../../api/axios';
 import { GraduationCap, ArrowLeft, User } from 'lucide-react';
 
@@ -148,6 +149,8 @@ const StudentCouncilPage = () => {
                     </Link>
                 </div>
             </div>
+
+            <Footer />
         </div>
     );
 };

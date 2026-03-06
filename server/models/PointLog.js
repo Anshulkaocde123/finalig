@@ -35,4 +35,8 @@ const pointLogSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ── Indexes ──
+pointLogSchema.index({ department: 1 });           // speeds up aggregation in getStandings
+pointLogSchema.index({ department: 1, createdAt: -1 }); // speeds up getDepartmentHistory
+
 module.exports = mongoose.model('PointLog', pointLogSchema);

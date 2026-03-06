@@ -8,8 +8,15 @@ const seedAdminAccount = async () => {
         const adminsCollection = db.collection('admins');
         const exists = await adminsCollection.findOne({ username: 'admin' });
         if (!exists) {
+            const seedPassword = process.env.ADMIN_SEED_PASSWORD || 'admin123';
+            if (seedPassword === 'admin123' && process.env.NODE_ENV === 'production') {
+                console.warn('\n⚠️  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.warn('⚠️  SECURITY WARNING: Using default admin password!');
+                console.warn('⚠️  Set ADMIN_SEED_PASSWORD env var immediately.');
+                console.warn('⚠️  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+            }
             const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash('admin123', salt);
+            const hash = await bcrypt.hash(seedPassword, salt);
             await adminsCollection.insertOne({
                 username: 'admin',
                 studentId: '00000',
@@ -37,7 +44,7 @@ const seedAdminAccount = async () => {
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
-            console.log('🔑 Auto-seeded admin account (admin / admin123)');
+            console.log('🔑 Auto-seeded admin account (admin / <ADMIN_SEED_PASSWORD>)');
         }
     } catch (err) {
         console.warn('⚠️  Could not auto-seed admin:', err.message);

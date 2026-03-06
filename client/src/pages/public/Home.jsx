@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import api from '../../api/axios';
 import socket from '../../socket';
 import PublicNavbar from '../../components/PublicNavbar';
+import Footer from '../../components/Footer';
 import MatchCard from '../../components/MatchCard';
 import { MatchCardSkeleton, HighlightSkeleton } from '../../components/SkeletonLoader';
 import { SPORT_ICONS, SPORTS } from '../../lib/constants';
@@ -580,6 +581,8 @@ const Home = () => {
                     </div>
                 )}
             </div>
+
+            <Footer />
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
 import PublicNavbar from '../../components/PublicNavbar';
+import Footer from '../../components/Footer';
 import { Trophy } from 'lucide-react';
 import socket from '../../socket';
 
@@ -176,11 +177,7 @@ const Leaderboard = () => {
             </div>
 
             {/* Footer */}
-            <footer className="py-6 text-center border-t border-slate-200 dark:border-slate-700">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Institute Gathering Inter-Games • Real-time Leaderboard
-                </p>
-            </footer>
+            <Footer />
         </div>
     );
 };

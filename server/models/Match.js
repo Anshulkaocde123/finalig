@@ -55,6 +55,12 @@ const matchSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Admin', 
         default: null 
+    },
+
+    // Idempotency flag — prevents awarding points twice for the same match
+    pointsAwarded: {
+        type: Boolean,
+        default: false
     }
 }, { 
     timestamps: true 

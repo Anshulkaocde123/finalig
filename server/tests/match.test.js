@@ -115,6 +115,18 @@ describe('POST /api/matches', () => {
 // 2. GET ALL MATCHES
 // ══════════════════════════════════════════════════
 describe('GET /api/matches', () => {
+    // Helper: insert matches directly into the DB (avoids coupling GET tests to POST logic)
+    async function seedMatch(overrides = {}) {
+        return Match.create({
+            sport: 'CRICKET',
+            teamA: deptA._id,
+            teamB: deptB._id,
+            venue: 'Main Ground',
+            scheduledAt: new Date(),
+            ...overrides,
+        });
+    }
+
     it('should return empty list initially', async () => {
         const res = await agent.get('/api/matches');
         expect(res.status).toBe(200);
@@ -124,16 +136,16 @@ describe('GET /api/matches', () => {
     });
 
     it('should return created matches', async () => {
-        await createMatchViaAPI();
-        await createMatchViaAPI({ sport: 'FOOTBALL' });
+        await seedMatch();
+        await seedMatch({ sport: 'FOOTBALL' });
 
         const res = await agent.get('/api/matches');
         expect(res.body.count).toBe(2);
     });
 
     it('should filter by sport', async () => {
-        await createMatchViaAPI({ sport: 'CRICKET' });
-        await createMatchViaAPI({ sport: 'FOOTBALL' });
+        await seedMatch({ sport: 'CRICKET' });
+        await seedMatch({ sport: 'FOOTBALL' });
 
         const res = await agent.get('/api/matches?sport=CRICKET');
         expect(res.body.count).toBe(1);
@@ -141,14 +153,14 @@ describe('GET /api/matches', () => {
     });
 
     it('should filter by status', async () => {
-        await createMatchViaAPI();
+        await seedMatch();
         const res = await agent.get('/api/matches?status=SCHEDULED');
         expect(res.body.count).toBe(1);
     });
 
     it('should respect limit parameter', async () => {
         for (let i = 0; i < 5; i++) {
-            await createMatchViaAPI({ sport: 'CRICKET' });
+            await seedMatch({ sport: 'CRICKET' });
         }
 
         const res = await agent.get('/api/matches?limit=2');
@@ -164,7 +176,7 @@ describe('GET /api/matches', () => {
     });
 
     it('should exclude managedBy and __v from response', async () => {
-        await createMatchViaAPI();
+        await seedMatch();
         const res = await agent.get('/api/matches');
         const match = res.body.data[0];
         expect(match).not.toHaveProperty('managedBy');

@@ -6,6 +6,9 @@ module.exports = {
     clearMocks: true,
     testTimeout: 30000,
 
+    // Run serially — test suites share a single in-memory MongoDB
+    maxWorkers: 1,
+
     // Test file discovery
     roots: ['<rootDir>/tests'],
     testMatch: ['**/*.test.js'],
@@ -13,7 +16,6 @@ module.exports = {
     // Setup & teardown
     globalSetup: '<rootDir>/tests/globalSetup.js',
     globalTeardown: '<rootDir>/tests/globalTeardown.js',
-    setupFilesAfterFramework: [],
 
     // Coverage
     collectCoverageFrom: [

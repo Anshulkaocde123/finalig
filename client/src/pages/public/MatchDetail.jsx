@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import socket from '../../socket';
 import PublicNavbar from '../../components/PublicNavbar';
+import Footer from '../../components/Footer';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Trophy, MapPin, Calendar, Clock, Tag } from 'lucide-react';
 import { SPORT_ICONS, SPORT_COLORS } from '../../lib/constants';
@@ -197,6 +198,8 @@ const MatchDetail = () => {
                     </div>
                 </motion.div>
             </div>
+
+            <Footer />
         </div>
     );
 };

@@ -91,15 +91,15 @@ const ScoringPresets = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
-                            <Settings className="w-8 h-8 text-blue-500" />
+                        <h1 className="text-2xl md:text-4xl font-bold text-slate-800 dark:text-white flex items-center gap-2 md:gap-3">
+                            <Settings className="w-6 h-6 md:w-8 md:h-8 text-blue-500" />
                             Scoring Presets
                         </h1>
                         <p className="text-slate-600 dark:text-slate-400 mt-1">Configure points for each sport</p>
                     </div>
                     <button onClick={() => setShowForm(!showForm)}
-                        className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all ${showForm ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'} text-white`}>
-                        {showForm ? <><X className="w-5 h-5" /> Cancel</> : <><Plus className="w-5 h-5" /> New Preset</>}
+                        className={`px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold flex items-center gap-2 transition-all text-sm md:text-base ${showForm ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'} text-white`}>
+                        {showForm ? <><X className="w-4 h-4 md:w-5 md:h-5" /> Cancel</> : <><Plus className="w-4 h-4 md:w-5 md:h-5" /> New Preset</>}
                     </button>
                 </div>
 
@@ -166,8 +166,8 @@ const ScoringPresets = () => {
                             </div>
                             <div className="flex gap-4">
                                 <button type="submit"
-                                    className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
-                                    <Save className="w-5 h-5" /> {editingId ? 'Update' : 'Create'} Preset
+                                    className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm md:text-base">
+                                    <Save className="w-4 h-4 md:w-5 md:h-5" /> {editingId ? 'Update' : 'Create'} Preset
                                 </button>
                                 <button type="button" onClick={resetForm}
                                     className="px-6 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg font-semibold transition-colors">Cancel</button>
@@ -191,7 +191,7 @@ const ScoringPresets = () => {
                                 <div key={preset._id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 hover:border-blue-300 dark:hover:border-blue-700 transition-all group">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-lg bg-blue-500 flex items-center justify-center text-2xl">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-blue-500 flex items-center justify-center text-xl md:text-2xl">
                                                 {sportData.emoji}
                                             </div>
                                             <div>
@@ -212,7 +212,7 @@ const ScoringPresets = () => {
                                         <div className="text-center p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg"><div className="text-lg font-bold text-amber-600 dark:text-amber-400">{preset.drawPoints}</div><div className="text-[10px] text-slate-400">Draw</div></div>
                                         <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg"><div className="text-lg font-bold text-blue-600 dark:text-blue-400">{preset.bonusPoints}</div><div className="text-[10px] text-slate-400">Bonus</div></div>
                                     </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-2">
                                         <button onClick={() => handleEdit(preset)}
                                             className="p-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
                                         <button onClick={() => handleDuplicate(preset)}
