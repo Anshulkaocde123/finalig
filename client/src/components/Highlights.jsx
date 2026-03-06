@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Film, Camera, FileText, Calendar, ChevronLeft, ChevronRight, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Film, Camera, FileText, Calendar, ChevronLeft, ChevronRight, Award, X } from 'lucide-react';
 import axios from 'axios';
 import socket from '../socket';
 
@@ -86,6 +86,7 @@ const Highlights = () => {
     const [availableDates, setAvailableDates] = useState([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showArticle, setShowArticle] = useState(false);
     // Use the singleton socket instance (no SocketContext needed)
 
     const fetchHighlights = useCallback(async (date) => {
@@ -270,7 +271,8 @@ const Highlights = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+                onClick={() => article?.content && setShowArticle(true)}
+                className={`bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden ${article?.content ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
             >
                 <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-emerald-500" />
@@ -285,7 +287,10 @@ const Highlights = () => {
                 <div className="p-4">
                     {article?.content ? (
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{article.content}</p>
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line line-clamp-8">{article.content}</p>
+                            <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
+                                <FileText className="w-3 h-3" /> Tap to read full article &rarr;
+                            </p>
                         </div>
                     ) : (
                         <InstagramEmbed url={article?.instagramUrl} type="article" />
@@ -295,6 +300,48 @@ const Highlights = () => {
                     )}
                 </div>
             </motion.div>
+
+            {/* Full Article Overlay */}
+            <AnimatePresence>
+                {showArticle && article?.content && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 pt-12 sm:pt-20 overflow-y-auto"
+                        onClick={() => setShowArticle(false)}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 30, scale: 0.97 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+                            <div className="flex items-center gap-2 p-5 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+                                <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                                    <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex-1">Article of the Day</span>
+                                {article.department && (
+                                    <span className="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                        <Award className="w-2.5 h-2.5" />
+                                        {typeof article.department === 'object' ? (article.department.shortCode || article.department.name) : article.department}
+                                    </span>
+                                )}
+                                <button onClick={() => setShowArticle(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-5 sm:p-6 overflow-y-auto flex-1">
+                                {article.caption && (
+                                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mb-3">{article.caption}</p>
+                                )}
+                                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{article.content}</p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     );
 };
