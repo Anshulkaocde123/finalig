@@ -2,11 +2,12 @@
   "name": "vnit-ig-app",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server/start.js",
   "scripts": {
-    "start": "concurrently \"npm run server --prefix server\" \"npm run dev --prefix client\"",
+    "start": "npm run serve",
+    "dev": "concurrently \"npm run server --prefix server\" \"npm run dev --prefix client\"",
     "build": "npm install --production=false && npm --prefix client install --production=false && npm --prefix client run build && npm --prefix server install",
-    "serve": "npm --prefix server start",
+    "serve": "cd server && node start.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
