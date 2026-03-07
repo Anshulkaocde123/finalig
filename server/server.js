@@ -119,9 +119,10 @@ app.use(helmet({
 
 // Rate limiting for auth endpoints to prevent brute-force attacks
 const rateLimit = require('express-rate-limit');
+const isDev = process.env.NODE_ENV !== 'production';
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // 20 attempts per window per IP
+    max: isDev ? 200 : 20, // Relaxed in dev for automated tests; strict in prod
     message: { message: 'Too many login attempts. Please try again after 15 minutes.' },
     standardHeaders: true,
     legacyHeaders: false,
