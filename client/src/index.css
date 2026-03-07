@@ -4,6 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* ============================================
    VNIT Inter-Games - Minimalist Theme
    3-Color Scheme: Slate, Blue, White

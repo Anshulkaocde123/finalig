@@ -50,17 +50,23 @@ const server = http.createServer(app);
 // Initialize Socket.io with CORS and connection settings
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://10.84.186.251:5173', 'http://10.84.186.226:5173'];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, origin);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+      
+        if (
+          origin.includes("localhost") ||
+          origin.includes("127.0.0.1") ||
+          origin.startsWith("http://192.168.") ||
+          origin.startsWith("http://10.")
+        ) {
+          return callback(null, true);
+        }
+      
+        return callback(new Error("Not allowed by CORS"));
+      },
   credentials: true
 }));
 

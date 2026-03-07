@@ -35,7 +35,12 @@ const Leaderboard = () => {
 
     const fetchStandings = async () => {
         try {
+            console.log("API base:", api.defaults.baseURL);
+            console.log("ENV:", import.meta.env.VITE_API_URL);
+    
             const res = await api.get('/leaderboard');
+            console.log("Response:", res);
+    
             const data = res.data.data || res.data;
             setStandings(Array.isArray(data) ? data : []);
         } catch (error) {

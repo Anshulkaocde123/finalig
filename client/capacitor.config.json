@@ -1,0 +1,8 @@
+{
+  "appId": "com.ACM.IG",
+  "appName": "Institute Gathering VNIT",
+  "webDir": "dist",
+  "server": {
+    "url": "https://client-eight-rouge.vercel.app"
+  }
+}

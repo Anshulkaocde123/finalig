@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Institute Gathering VNIT</string>
+    <string name="title_activity_main">Institute Gathering VNIT</string>
+    <string name="package_name">com.ACM.IG</string>
+    <string name="custom_url_scheme">com.ACM.IG</string>
+</resources>
