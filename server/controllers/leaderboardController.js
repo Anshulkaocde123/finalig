@@ -108,6 +108,15 @@ const getStandings = async (req, res) => {
             return (a.name || '').localeCompare(b.name || '');
         });
 
+        // Assign actual ranks (handling ties — same points = same rank)
+        let currentRank = 1;
+        for (let i = 0; i < finalStandings.length; i++) {
+            if (i > 0 && finalStandings[i].points < finalStandings[i - 1].points) {
+                currentRank = i + 1;
+            }
+            finalStandings[i].rank = currentRank;
+        }
+
         res.json({ 
             success: true, 
             count: finalStandings.length,
@@ -214,6 +223,15 @@ const getDetailedStandings = async (req, res) => {
             if (b.winPercentage !== a.winPercentage) return b.winPercentage - a.winPercentage;
             return (a.name || '').localeCompare(b.name || '');
         });
+
+        // Assign actual ranks (handling ties — same points = same rank)
+        let currentRank = 1;
+        for (let i = 0; i < standings.length; i++) {
+            if (i > 0 && standings[i].points < standings[i - 1].points) {
+                currentRank = i + 1;
+            }
+            standings[i].rank = currentRank;
+        }
 
         res.json({
             success: true,

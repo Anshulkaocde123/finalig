@@ -6,29 +6,38 @@ import { RefreshCw, Trophy, TrendingUp, ChevronDown, Pencil, Check, X } from 'lu
 
 const LeaderboardManagement = () => {
     const [leaderboard, setLeaderboard] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);       // only for initial load
+    const [refreshing, setRefreshing] = useState(false); // soft refresh (no spinner)
     const [expandedRow, setExpandedRow] = useState(null);
     const [editingDept, setEditingDept] = useState(null);
     const [editPoints, setEditPoints] = useState('');
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        fetchLeaderboard();
-        const handlePointsAwarded = () => fetchLeaderboard();
-        const handleReset = () => fetchLeaderboard();
+        fetchLeaderboard(true); // initial load → show spinner
+        const handlePointsAwarded = () => fetchLeaderboard(false);
+        const handleReset = () => fetchLeaderboard(false);
         socket.on('pointsAwarded', handlePointsAwarded);
         socket.on('leaderboardReset', handleReset);
         return () => { socket.off('pointsAwarded', handlePointsAwarded); socket.off('leaderboardReset', handleReset); };
     }, []);
 
-    const fetchLeaderboard = async () => {
+    const fetchLeaderboard = async (showSpinner = false) => {
         try {
-            setLoading(true);
-            const response = await api.get('/leaderboard');
+            if (showSpinner) setLoading(true);
+            else setRefreshing(true);
+            const response = await api.get('/leaderboard/detailed');
             const sorted = (response.data.data || []).sort((a, b) => b.points - a.points);
             setLeaderboard(sorted);
-        } catch (err) { toast.error('Failed to load leaderboard'); }
-        finally { setLoading(false); }
+        } catch (err) {
+            try {
+                const response = await api.get('/leaderboard');
+                const sorted = (response.data.data || []).sort((a, b) => b.points - a.points);
+                setLeaderboard(sorted);
+            } catch (e) { /* ignore fallback error */ }
+            if (showSpinner) toast.error('Failed to load leaderboard');
+        }
+        finally { setLoading(false); setRefreshing(false); }
     };
 
     const startEditing = (dept) => {
@@ -50,11 +59,32 @@ const LeaderboardManagement = () => {
         setSaving(true);
         try {
             await api.put(`/leaderboard/department/${deptId}`, { points: newPoints });
-            await fetchLeaderboard();
+            // Optimistic update: patch the local state immediately
+            setLeaderboard(prev =>
+                prev.map(d => d.departmentId === deptId || d._id === deptId
+                    ? { ...d, points: newPoints }
+                    : d
+                ).sort((a, b) => b.points - a.points)
+            );
             toast.success('Points updated successfully!');
             cancelEditing();
+            // Background refresh for full data consistency (socket will also fire)
+            fetchLeaderboard(false);
         } catch (err) { toast.error(err.response?.data?.message || 'Failed to update points'); }
         finally { setSaving(false); }
+    };
+
+    // Compute actual ranks accounting for ties
+    const computeRanks = (data) => {
+        const ranks = [];
+        let currentRank = 1;
+        for (let i = 0; i < data.length; i++) {
+            if (i > 0 && data[i].points < data[i - 1].points) {
+                currentRank = i + 1;
+            }
+            ranks.push(currentRank);
+        }
+        return ranks;
     };
 
     const getRankBadge = (rank) => ['🥇', '🥈', '🥉'][rank - 1] || `#${rank}`;
@@ -85,10 +115,10 @@ const LeaderboardManagement = () => {
                     </h1>
                     <p className="text-slate-600 dark:text-slate-400 mt-1">View rankings and edit department points</p>
                 </div>
-                <button onClick={fetchLeaderboard} disabled={loading}
+                <button onClick={() => fetchLeaderboard(false)} disabled={refreshing}
                     className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
                     title="Refresh">
-                    <RefreshCw className={`w-5 h-5 text-slate-500 dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-5 h-5 text-slate-500 dark:text-slate-400 ${refreshing ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
@@ -110,7 +140,8 @@ const LeaderboardManagement = () => {
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                        {leaderboard.map((dept, idx) => {
+                        {(() => { const ranks = computeRanks(leaderboard); return leaderboard.map((dept, idx) => {
+                            const rank = ranks[idx];
                             const history = dept.history || [];
                             const isExpanded = expandedRow === dept._id;
                             const isEditing = editingDept === dept._id;
@@ -124,11 +155,11 @@ const LeaderboardManagement = () => {
                                         <div className="flex items-center justify-between gap-3 sm:gap-4">
                                             {/* Rank and Name */}
                                             <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                                                <div className={`${idx < 3 ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'} rounded-full w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center font-bold text-base sm:text-xl text-white flex-shrink-0`}>
-                                                    {getRankBadge(idx + 1)}
+                                                <div className={`${rank <= 3 ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'} rounded-full w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center font-bold text-base sm:text-xl text-white flex-shrink-0`}>
+                                                    {getRankBadge(rank)}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Position {idx + 1}</div>
+                                                    <div className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Position {rank}</div>
                                                     <div className="text-sm sm:text-xl font-bold text-slate-800 dark:text-white truncate">{dept.name}</div>
                                                     <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">({dept.shortCode})</div>
                                                 </div>
@@ -230,7 +261,7 @@ const LeaderboardManagement = () => {
                                     )}
                                 </React.Fragment>
                             );
-                        })}
+                        }); })()}
                     </div>
                 )}
             </div>

@@ -137,7 +137,8 @@ const Home = () => {
             console.log('🔄 Socket reconnected — syncing missed events');
             fetchData(true);
         };
-        socket.on('reconnect', handleReconnect);
+        // socket.io v4: 'reconnect' fires on the Manager, not the Socket
+        socket.io.on('reconnect', handleReconnect);
 
         return () => {
             clearTimeout(debounceRef.current);
@@ -147,7 +148,7 @@ const Home = () => {
             socket.off('highlightCreated', debouncedHighlightFetch);
             socket.off('highlightUpdated', debouncedHighlightFetch);
             socket.off('highlightDeleted', debouncedHighlightFetch);
-            socket.off('reconnect', handleReconnect);
+            socket.io.off('reconnect', handleReconnect);
         };
     }, [fetchData, sortMatches, highlightDate, fetchHighlightsForDate]);
 
@@ -166,12 +167,11 @@ const Home = () => {
     };
 
     const formatDisplayDate = (dateStr) => {
-        {/*if (dateStr === todayStr) return 'Today';
+        if (dateStr === todayStr) return 'Today';
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         if (dateStr === getLocalDateStr(yesterday)) return 'Yesterday';
-        return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });*/}
-        return null;
+        return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
     const filteredMatches = useMemo(() => {

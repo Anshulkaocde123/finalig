@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import socket from '../../socket';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, CheckCircle, Edit3, Trash2, Search, Filter, Save, X, AlertCircle } from 'lucide-react';
@@ -31,6 +32,39 @@ const LiveConsole = () => {
     };
 
     useEffect(() => { fetchMatches(); }, []);
+
+    // Real-time socket listeners for live updates
+    useEffect(() => {
+        const handleMatchUpdate = (match) => {
+            if (!match?._id) return;
+            setMatches(prev => prev.map(m => m._id === match._id ? { ...m, ...match } : m));
+        };
+        const handleMatchCreated = (match) => {
+            if (!match?._id) return;
+            setMatches(prev => {
+                if (prev.some(m => m._id === match._id)) return prev;
+                return [match, ...prev];
+            });
+        };
+        const handleMatchDeleted = (data) => {
+            const matchId = data?.matchId || data?._id;
+            if (!matchId) return;
+            setMatches(prev => prev.filter(m => m._id !== matchId));
+        };
+        const handleReconnect = () => fetchMatches();
+
+        socket.on('matchUpdate', handleMatchUpdate);
+        socket.on('matchCreated', handleMatchCreated);
+        socket.on('matchDeleted', handleMatchDeleted);
+        socket.io.on('reconnect', handleReconnect);
+
+        return () => {
+            socket.off('matchUpdate', handleMatchUpdate);
+            socket.off('matchCreated', handleMatchCreated);
+            socket.off('matchDeleted', handleMatchDeleted);
+            socket.io.off('reconnect', handleReconnect);
+        };
+    }, []);
 
     const startEdit = (match) => {
         setEditingMatch(match._id);

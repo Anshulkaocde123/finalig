@@ -243,8 +243,27 @@ const updateMatch = asyncHandler(async (req, res) => {
     // ── Whitelist allowed fields with validation ──
     if (scoreA !== undefined) match.scoreA = String(scoreA).substring(0, 50);
     if (scoreB !== undefined) match.scoreB = String(scoreB).substring(0, 50);
-    if (winner !== undefined) match.winner = winner || null;
-    if (status) match.status = status;
+    if (winner !== undefined) {
+        if (winner) {
+            // Validate winner is one of the two teams
+            const winnerId = winner.toString();
+            const teamAId = match.teamA.toString();
+            const teamBId = match.teamB.toString();
+            if (winnerId !== teamAId && winnerId !== teamBId) {
+                res.status(400);
+                throw new Error('Winner must be one of the two competing teams');
+            }
+        }
+        match.winner = winner || null;
+    }
+    if (status) {
+        // Guard: prevent reverting a COMPLETED match that already had points awarded
+        if (match.status === 'COMPLETED' && status !== 'COMPLETED' && match.pointsAwarded) {
+            res.status(400);
+            throw new Error('Cannot revert a completed match that has already had points awarded. Undo the point award first.');
+        }
+        match.status = status;
+    }
     if (summary !== undefined) match.summary = String(summary).substring(0, 1000);
     if (venue !== undefined) match.venue = String(venue).substring(0, 200);
     if (scheduledAt !== undefined) match.scheduledAt = scheduledAt;
@@ -263,22 +282,8 @@ const updateMatch = asyncHandler(async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-        // Emit only essential fields to reduce broadcast payload
-        io.emit('matchUpdate', {
-            _id: populatedMatch._id,
-            sport: populatedMatch.sport,
-            status: populatedMatch.status,
-            scoreA: populatedMatch.scoreA,
-            scoreB: populatedMatch.scoreB,
-            summary: populatedMatch.summary,
-            winner: populatedMatch.winner,
-            teamA: populatedMatch.teamA,
-            teamB: populatedMatch.teamB,
-            matchCategory: populatedMatch.matchCategory,
-            scheduledAt: populatedMatch.scheduledAt,
-            venue: populatedMatch.venue,
-            updatedAt: populatedMatch.updatedAt
-        });
+        // Emit the full populated match to prevent clients from losing fields
+        io.emit('matchUpdate', populatedMatch);
     }
 
     res.json({ success: true, data: populatedMatch });

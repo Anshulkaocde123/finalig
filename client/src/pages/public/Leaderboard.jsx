@@ -35,12 +35,7 @@ const Leaderboard = () => {
 
     const fetchStandings = async () => {
         try {
-            console.log("API base:", api.defaults.baseURL);
-            console.log("ENV:", import.meta.env.VITE_API_URL);
-    
             const res = await api.get('/leaderboard');
-            console.log("Response:", res);
-    
             const data = res.data.data || res.data;
             setStandings(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -51,11 +46,34 @@ const Leaderboard = () => {
         }
     };
 
+    // Compute actual ranks accounting for ties
+    // Uses API-provided rank if available, otherwise computes client-side
+    const computeRanks = (standings) => {
+        // If API provides rank field, use it directly
+        if (standings.length > 0 && standings[0].rank !== undefined) {
+            return standings.map(s => s.rank);
+        }
+        // Fallback: compute client-side
+        const ranks = [];
+        let currentRank = 1;
+        for (let i = 0; i < standings.length; i++) {
+            const pts = standings[i].points !== undefined ? standings[i].points : standings[i].totalScore || 0;
+            if (i > 0) {
+                const prevPts = standings[i - 1].points !== undefined ? standings[i - 1].points : standings[i - 1].totalScore || 0;
+                if (pts < prevPts) {
+                    currentRank = i + 1;
+                }
+            }
+            ranks.push(currentRank);
+        }
+        return ranks;
+    };
+
     const getRankIcon = (rank) => {
-        if (rank === 0) return '🥇';
-        if (rank === 1) return '🥈';
-        if (rank === 2) return '🥉';
-        return `#${rank + 1}`;
+        if (rank === 1) return '🥇';
+        if (rank === 2) return '🥈';
+        if (rank === 3) return '🥉';
+        return `#${rank}`;
     };
 
     const getLogoUrl = (logoPath) => {
@@ -106,8 +124,9 @@ const Leaderboard = () => {
 
                     {/* Standings */}
                     <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                        {standings.map((team, index) => {
-                            const isTop3 = index < 3;
+                        {(() => { const ranks = computeRanks(standings); return standings.map((team, index) => {
+                            const rank = ranks[index];
+                            const isTop3 = rank <= 3;
                             const deptName = team.name || team.department?.name || 'Unknown';
                             const deptCode = team.shortCode || team.department?.shortCode || '';
                             const deptLogo = team.logo || team.department?.logo;
@@ -124,7 +143,7 @@ const Leaderboard = () => {
                                     <div className={`w-10 sm:w-16 flex items-center justify-center flex-shrink-0 ${
                                         isTop3 ? 'text-xl sm:text-2xl' : 'text-sm font-bold text-slate-400 dark:text-slate-500'
                                     }`}>
-                                        {getRankIcon(index)}
+                                        {getRankIcon(rank)}
                                     </div>
 
                                     {/* Logo */}
@@ -169,7 +188,7 @@ const Leaderboard = () => {
                                     </div>
                                 </div>
                             );
-                        })}
+                        }); })()}
                     </div>
                 </div>
 

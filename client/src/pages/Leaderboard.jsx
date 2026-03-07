@@ -29,11 +29,11 @@ const Leaderboard = () => {
     useEffect(() => {
         if (!socket) return;
         const handler = () => fetchLeaderboard();
-        socket.on('leaderboardUpdated', handler);
-        socket.on('pointsUpdated', handler);
+        socket.on('pointsAwarded', handler);
+        socket.on('leaderboardReset', handler);
         return () => {
-            socket.off('leaderboardUpdated', handler);
-            socket.off('pointsUpdated', handler);
+            socket.off('pointsAwarded', handler);
+            socket.off('leaderboardReset', handler);
         };
     }, [socket]);
 

@@ -4,11 +4,11 @@ const scoringPresetSchema = new mongoose.Schema({
     sport: {
         type: String,
         required: [true, 'Sport is required'],
-        enum: ['CRICKET', 'BADMINTON', 'TABLE_TENNIS', 'VOLLEYBALL', 'FOOTBALL', 'BASKETBALL', 'KHOKHO', 'KABADDI', 'CHESS']
+        enum: ['CRICKET', 'BADMINTON', 'TABLE_TENNIS', 'VOLLEYBALL', 'FOOTBALL', 'HOCKEY', 'BASKETBALL', 'KHOKHO', 'KABADDI', 'CHESS']
     },
     name: {
         type: String,
-        required: [true, 'Preset name is required'],
+        default: 'standard',
         trim: true
     },
     description: {
